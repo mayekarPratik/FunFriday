@@ -1,13 +1,18 @@
 import { Server, Socket } from 'socket.io';
-import { GameState, JoinRoomPayload, Player, RoleType, ROLE_PRIORITIES } from '../types/game';
+import { GameState, JoinRoomPayload, Player, RoleType, NightActionPayload } from '../types/game';
 import {
   createUniqueRoomCode,
   getGameState,
   saveGameState,
   ROOM_TTL_SECONDS
 } from '../services/redis';
-
-export const getSocketRoomName = (roomCode: string): string => `lobby:${roomCode.toUpperCase()}`;
+import {
+  initializeNightPhase,
+  handleNightAction,
+  resolveDaybreak,
+  evaluateWinConditions,
+  getSocketRoomName
+} from '../game/engine';
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -16,25 +21,6 @@ function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
-}
-
-/**
- * Check win conditions
- * Wolves win: living wolves >= living non-wolves
- * Villagers win: living wolves === 0
- */
-export function evaluateWinConditions(state: GameState): 'wolves' | 'villagers' | null {
-  const alivePlayers = state.players.filter((p) => p.is_alive);
-  const aliveWolves = alivePlayers.filter((p) => p.role === 'wolf').length;
-  const aliveNonWolves = alivePlayers.length - aliveWolves;
-
-  if (aliveWolves === 0) {
-    return 'villagers';
-  }
-  if (aliveWolves >= aliveNonWolves) {
-    return 'wolves';
-  }
-  return null;
 }
 
 export function registerSocketHandlers(io: Server): void {
@@ -52,8 +38,10 @@ export function registerSocketHandlers(io: Server): void {
           phase: 'lobby',
           host_socket_id: socket.id,
           active_role_priority: 0,
+          active_role: null,
+          night_queue: [],
+          night_actions: {},
           players: [],
-          night_targets: {},
           votes: {},
           last_night_killed: null,
           last_day_eliminated: null,
@@ -160,6 +148,7 @@ export function registerSocketHandlers(io: Server): void {
 
     /**
      * Handler for 'start_game'
+     * Assigns roles according to party size, shifts to night, and initializes night queue
      */
     socket.on('start_game', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
       try {
@@ -190,11 +179,15 @@ export function registerSocketHandlers(io: Server): void {
         }
 
         const playerIndices = shuffleArray(state.players.map((_, i) => i));
-        const rolesToAssign: RoleType[] = ['wolf', 'seer', 'doctor'];
+        
+        // Distribution of roles based on player count
+        const availableRoles: RoleType[] = ['wolf', 'seer', 'doctor', 'witch', 'cupid'];
+        const rolesToAssign: RoleType[] = availableRoles.slice(0, Math.min(availableRoles.length, state.players.length - 1));
         
         state.players.forEach((p) => {
           p.role = 'villager';
           p.is_alive = true;
+          p.is_lover = false;
         });
 
         rolesToAssign.forEach((role, idx) => {
@@ -204,14 +197,8 @@ export function registerSocketHandlers(io: Server): void {
           }
         });
 
-        state.phase = 'night';
-        state.active_role_priority = 1; // 1 = Wolf
-        state.night_targets = {};
-        state.votes = {};
-        state.last_night_killed = null;
-        state.last_day_eliminated = null;
-        state.timer_ends_at = null;
-        state.winner = null;
+        // Initialize Night phase via game engine
+        initializeNightPhase(state);
 
         await saveGameState(state, ROOM_TTL_SECONDS);
 
@@ -233,10 +220,10 @@ export function registerSocketHandlers(io: Server): void {
     });
 
     /**
-     * Handler for 'night_action'
-     * Submits a role's target during the Night phase
+     * Handler for 'submit_action' & 'night_action'
+     * Handled by game engine handleNightAction
      */
-    socket.on('night_action', async (payload: { room_code?: string; target_socket_id: string }, callback?: (response: any) => void) => {
+    const onNightAction = async (payload: { room_code?: string; target_socket_id?: string; [key: string]: any }, callback?: (response: any) => void) => {
       try {
         let roomCode = payload?.room_code?.toUpperCase();
         if (!roomCode) {
@@ -253,65 +240,29 @@ export function registerSocketHandlers(io: Server): void {
         if (!state) throw new Error('Room not found');
 
         const player = state.players.find((p) => p.socket_id === socket.id);
-        if (!player || !player.is_alive) throw new Error('Player not eligible');
+        if (!player || !player.is_alive) throw new Error('Player not eligible or alive');
 
-        if (!state.night_targets) state.night_targets = {};
+        const playerRole = player.role || 'villager';
+        const actionPayload: NightActionPayload = {
+          target_socket_id: payload.target_socket_id,
+          target_socket_ids: payload.target_socket_ids,
+          action_type: payload.action_type
+        };
 
-        if (player.role === 'wolf') {
-          state.night_targets.wolf_target = payload.target_socket_id;
-        } else if (player.role === 'doctor') {
-          state.night_targets.doctor_target = payload.target_socket_id;
-        } else if (player.role === 'seer') {
-          state.night_targets.seer_target = payload.target_socket_id;
-        }
+        const updatedState = await handleNightAction(state, playerRole, actionPayload, io);
 
-        await saveGameState(state, ROOM_TTL_SECONDS);
-        const socketRoom = getSocketRoomName(roomCode);
-        io.to(socketRoom).emit('game_state_update', state);
-
-        if (typeof callback === 'function') callback({ success: true, state });
+        if (typeof callback === 'function') callback({ success: true, state: updatedState });
       } catch (error: any) {
+        console.error('[NightAction error]:', error.message);
         if (typeof callback === 'function') callback({ success: false, error: error.message });
       }
-    });
+    };
 
-    /**
-     * Handler for 'advance_night_priority'
-     */
-    socket.on('advance_night_priority', async (payload: { room_code?: string; priority?: number }, callback?: (response: any) => void) => {
-      try {
-        let roomCode = payload?.room_code?.toUpperCase();
-        if (!roomCode) {
-          for (const room of socket.rooms) {
-            if (room.startsWith('lobby:')) {
-              roomCode = room.replace('lobby:', '');
-              break;
-            }
-          }
-        }
-        if (!roomCode) throw new Error('Room code required');
-        const state = await getGameState(roomCode);
-        if (!state) throw new Error('Room not found');
-
-        if (payload?.priority !== undefined) {
-          state.active_role_priority = payload.priority;
-        } else {
-          state.active_role_priority = (state.active_role_priority % 3) + 1;
-        }
-
-        await saveGameState(state, ROOM_TTL_SECONDS);
-        const socketRoom = getSocketRoomName(roomCode);
-        io.to(socketRoom).emit('game_state_update', state);
-
-        if (typeof callback === 'function') callback({ success: true, state });
-      } catch (error: any) {
-        if (typeof callback === 'function') callback({ success: false, error: error.message });
-      }
-    });
+    socket.on('submit_action', onNightAction);
+    socket.on('night_action', onNightAction);
 
     /**
      * Handler for 'resolve_night_to_day'
-     * Resolves night actions, marks casualties, starts 5-minute Day phase
      */
     socket.on('resolve_night_to_day', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
       try {
@@ -328,35 +279,7 @@ export function registerSocketHandlers(io: Server): void {
         const state = await getGameState(roomCode);
         if (!state) throw new Error('Room not found');
 
-        const wolfTarget = state.night_targets?.wolf_target;
-        const doctorTarget = state.night_targets?.doctor_target;
-
-        let killedPlayerName: string | null = null;
-
-        // If wolf picked a target and doctor didn't save them
-        if (wolfTarget && wolfTarget !== doctorTarget) {
-          const victim = state.players.find((p) => p.socket_id === wolfTarget);
-          if (victim && victim.is_alive) {
-            victim.is_alive = false;
-            killedPlayerName = victim.name;
-          }
-        }
-
-        state.last_night_killed = killedPlayerName;
-        state.night_targets = {};
-        state.votes = {};
-
-        // Evaluate win conditions after night death
-        const winner = evaluateWinConditions(state);
-        if (winner) {
-          state.phase = 'game_over';
-          state.winner = winner;
-          state.timer_ends_at = null;
-        } else {
-          // Transition to Day Phase with a 5-minute timer (300,000 ms)
-          state.phase = 'day';
-          state.timer_ends_at = Date.now() + 5 * 60 * 1000;
-        }
+        resolveDaybreak(state);
 
         await saveGameState(state, ROOM_TTL_SECONDS);
         const socketRoom = getSocketRoomName(roomCode);
@@ -369,7 +292,7 @@ export function registerSocketHandlers(io: Server): void {
     });
 
     /**
-     * Helper to tally votes and transition to game_over or night
+     * Helper to tally votes and transition to game_over or next night
      */
     const tallyAndAdvance = async (state: GameState, roomCode: string) => {
       const votes = state.votes || {};
@@ -397,6 +320,15 @@ export function registerSocketHandlers(io: Server): void {
         if (victim && victim.is_alive) {
           victim.is_alive = false;
           eliminatedPlayerName = victim.name;
+
+          // Check if eliminated player was a Cupid lover
+          if (victim.is_lover) {
+            const partner = state.players.find((p) => p.is_lover && p.is_alive && p.socket_id !== victim.socket_id);
+            if (partner) {
+              partner.is_alive = false;
+              eliminatedPlayerName = `${victim.name} & ${partner.name} (Lover)`;
+            }
+          }
         }
       }
 
@@ -409,10 +341,8 @@ export function registerSocketHandlers(io: Server): void {
         state.phase = 'game_over';
         state.winner = winner;
       } else {
-        // Back to Night phase!
-        state.phase = 'night';
-        state.active_role_priority = 1; // Wolves wake up first
-        state.night_targets = {};
+        // Shift back to Night phase with fresh night_queue
+        initializeNightPhase(state);
       }
 
       await saveGameState(state, ROOM_TTL_SECONDS);
@@ -422,7 +352,6 @@ export function registerSocketHandlers(io: Server): void {
 
     /**
      * Handler for 'submit_vote'
-     * Submits a player's vote during the Day phase
      */
     socket.on('submit_vote', async (payload: { room_code?: string; target_socket_id: string }, callback?: (response: any) => void) => {
       try {
@@ -457,7 +386,6 @@ export function registerSocketHandlers(io: Server): void {
           livingPlayers.some((p) => p.socket_id === voterId)
         ).length;
 
-        // Check if all living players have voted
         if (livingVoterCount >= livingPlayers.length) {
           console.log(`[Voting Complete] All ${livingPlayers.length} players voted in room ${roomCode}`);
           await tallyAndAdvance(state, roomCode);
@@ -476,7 +404,6 @@ export function registerSocketHandlers(io: Server): void {
 
     /**
      * Handler for 'tally_day_votes'
-     * Triggered by host or when day timer expires
      */
     socket.on('tally_day_votes', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
       try {

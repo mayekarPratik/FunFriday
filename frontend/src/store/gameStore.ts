@@ -211,6 +211,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   submitNightAction: (targetSocketId: string) => {
     const { socket, gameState } = get();
     if (socket && gameState) {
+      socket.emit('submit_action', {
+        room_code: gameState.room_code,
+        target_socket_id: targetSocketId
+      });
       socket.emit('night_action', {
         room_code: gameState.room_code,
         target_socket_id: targetSocketId
