@@ -151,12 +151,23 @@ export interface InteractiveBackgroundProps {
 export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ isLandingPage = true }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isLandingPageRef = useRef(isLandingPage);
-  const releaseParticlesRef = useRef<(() => void) | null>(null);
+  const triggerExitRef = useRef<(() => void) | null>(null);
+  const triggerEnterRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    const prev = isLandingPageRef.current;
     isLandingPageRef.current = isLandingPage;
-    if (!isLandingPage && releaseParticlesRef.current) {
-      releaseParticlesRef.current();
+
+    if (prev && !isLandingPage) {
+      // Transitioning: Landing -> Game (scatter/exit)
+      if (triggerExitRef.current) {
+        triggerExitRef.current();
+      }
+    } else if (!prev && isLandingPage) {
+      // Transitioning: Game -> Landing (spawn at edges & assemble)
+      if (triggerEnterRef.current) {
+        triggerEnterRef.current();
+      }
     }
   }, [isLandingPage]);
 
@@ -207,27 +218,60 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       window.addEventListener('mouseleave', handleMouseLeave);
     }
 
-    // Adaptive Particle Count: 40 on mobile, 240 on desktop for rich, fast constellation performance
+    // Adaptive Particle Count: 40 on mobile, 240 on desktop
     const particleCount = isMobile ? 40 : 240;
     const particles: Particle[] = [];
 
     const maxLineDistance = 45;
     let shapeOpacity = 0;
+    let isExiting = !isLandingPageRef.current;
+    let isCompletelyOffscreen = !isLandingPageRef.current;
 
+    // Helper: Pick a random point along the perimeter/outer edges of the viewport
+    const getRandomEdgeCoordinate = () => {
+      const edge = Math.floor(Math.random() * 4);
+      let edgeX = 0;
+      let edgeY = 0;
+      const margin = 20;
+
+      switch (edge) {
+        case 0: // Top edge
+          edgeX = Math.random() * width;
+          edgeY = -margin;
+          break;
+        case 1: // Right edge
+          edgeX = width + margin;
+          edgeY = Math.random() * height;
+          break;
+        case 2: // Bottom edge
+          edgeX = Math.random() * width;
+          edgeY = height + margin;
+          break;
+        case 3: // Left edge
+        default:
+          edgeX = -margin;
+          edgeY = Math.random() * height;
+          break;
+      }
+      return { edgeX, edgeY };
+    };
+
+    // Initialize particles
     for (let i = 0; i < particleCount; i++) {
       const baseSpeed = 0.12 + Math.random() * 0.2;
       const angle = Math.random() * Math.PI * 2;
       const baseAlpha = 0.25 + Math.random() * 0.65;
-      const randX = Math.random() * width;
-      const randY = Math.random() * height;
+
+      const initX = isLandingPageRef.current ? Math.random() * width : -999;
+      const initY = isLandingPageRef.current ? Math.random() * height : -999;
 
       particles.push({
-        x: randX,
-        y: randY,
-        targetX: randX,
-        targetY: randY,
-        baseX: randX,
-        baseY: randY,
+        x: initX,
+        y: initY,
+        targetX: initX,
+        targetY: initY,
+        baseX: initX,
+        baseY: initY,
         baseVx: Math.cos(angle) * baseSpeed,
         baseVy: Math.sin(angle) * baseSpeed,
         vx: Math.cos(angle) * baseSpeed,
@@ -247,7 +291,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       const shapeCoords = getShapeCoordinates(iconType, width, height);
       if (shapeCoords.length === 0) return;
 
-      // Sort targets spatially (by x + y) to match nearby particles smoothly
       const sortedTargets = [...shapeCoords].sort((a, b) => a.x + a.y - (b.x + b.y));
       const sortedParticles = [...particles].sort((a, b) => a.x + a.y - (b.x + b.y));
 
@@ -257,7 +300,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
         p.targetX = target.x;
         p.targetY = target.y;
         p.state = 'forming';
-        // Gentle initial inertia damping for a fluid glide
         p.vx *= 0.5;
         p.vy *= 0.5;
       });
@@ -267,7 +309,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       shapeOpacity = 0;
       particles.forEach((p) => {
         p.state = 'drifting';
-        // Soft, organic scatter nudge so they slowly disengage and drift apart
         const scatterAngle = Math.random() * Math.PI * 2;
         const scatterSpeed = 0.25 + Math.random() * 0.45;
         p.vx = Math.cos(scatterAngle) * scatterSpeed;
@@ -275,13 +316,67 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       });
     };
 
-    releaseParticlesRef.current = releaseParticles;
+    // 1. Trigger Exit: Strong radial blast outwards to push all particles off-screen
+    // 1. Trigger Exit: Smooth, graceful outward drift to push all particles off-screen
+    const triggerExit = () => {
+      isExiting = true;
+      isCompletelyOffscreen = false;
+      shapeOpacity = 0;
 
-    // State Machine Cycle (38 seconds total loop - 10s gap, 7s solid shape hold)
-    // Phase 1 (0-10s): Drifting (10s gap)
-    // Phase 2 (10-19s): Wolf (forms in ~1.5s & holds shape solidly for 7.5s)
-    // Phase 3 (19-29s): Drifting (10s gap)
-    // Phase 4 (29-38s): Mafia (forms in ~1.5s & holds shape solidly for 7.5s)
+      const centerX = width * 0.5;
+      const centerY = height * 0.5;
+
+      particles.forEach((p) => {
+        p.state = 'drifting';
+        // Calculate radial direction vector from screen center
+        let dx = p.x - centerX;
+        let dy = p.y - centerY;
+        const dist = Math.hypot(dx, dy) || 1;
+        dx /= dist;
+        dy /= dist;
+
+        // Apply a gentle, elegant exit velocity that builds up smoothly
+        const speed = 1.8 + Math.random() * 2.4;
+        p.vx = dx * speed;
+        p.vy = dy * speed;
+      });
+    };
+
+    // 2. Trigger Enter: Spawn along viewport edges and glide smoothly to shape / center
+    const triggerEnter = () => {
+      isExiting = false;
+      isCompletelyOffscreen = false;
+
+      // Spawn each particle randomly on outer edges
+      particles.forEach((p) => {
+        const { edgeX, edgeY } = getRandomEdgeCoordinate();
+        p.x = edgeX;
+        p.y = edgeY;
+        p.state = 'drifting';
+
+        // Target somewhere inside screen
+        const targetInsideX = width * 0.15 + Math.random() * (width * 0.7);
+        const targetInsideY = height * 0.15 + Math.random() * (height * 0.7);
+        p.targetX = targetInsideX;
+        p.targetY = targetInsideY;
+
+        // Gentle inward initial velocity
+        const angle = Math.atan2(targetInsideY - edgeY, targetInsideX - edgeX);
+        const inwardSpeed = 4 + Math.random() * 6;
+        p.vx = Math.cos(angle) * inwardSpeed;
+        p.vy = Math.sin(angle) * inwardSpeed;
+      });
+
+      // Default start forming wolf constellation on entry
+      if (!isMobile) {
+        applyShapeTargets('wolf');
+      }
+    };
+
+    triggerExitRef.current = triggerExit;
+    triggerEnterRef.current = triggerEnter;
+
+    // State Machine Cycle (38 seconds total loop)
     let lastPhase = -1;
     const cycleDuration = 38000;
     const startTime = performance.now();
@@ -291,19 +386,26 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
     const render = () => {
       time += 0.02;
       const activeLanding = isLandingPageRef.current;
+
+      // Performance optimization: When in gameplay and all particles are offscreen, skip rendering
+      if (!activeLanding && isCompletelyOffscreen) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
       const elapsed = (performance.now() - startTime) % cycleDuration;
 
       // State machine cycle runs only on desktop and only on the Landing Page
-      if (!isMobile && activeLanding) {
+      if (!isMobile && activeLanding && !isExiting) {
         let currentPhase = 0;
         if (elapsed >= 0 && elapsed < 10000) {
-          currentPhase = 1; // Phase 1: Drifting (10s gap)
+          currentPhase = 1; // Drifting
         } else if (elapsed >= 10000 && elapsed < 19000) {
-          currentPhase = 2; // Phase 2: Wolf (holds solidly ~7.5s)
+          currentPhase = 2; // Wolf shape
         } else if (elapsed >= 19000 && elapsed < 29000) {
-          currentPhase = 3; // Phase 3: Drifting (10s gap)
+          currentPhase = 3; // Drifting
         } else {
-          currentPhase = 4; // Phase 4: Mafia (holds solidly ~7.5s)
+          currentPhase = 4; // Mafia shape
         }
 
         if (currentPhase !== lastPhase) {
@@ -317,22 +419,20 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
           }
         }
 
-        // Smoothly fade constellation lines in during forming phases, out during drifting
+        // Smoothly fade constellation lines in during forming phases
         if (currentPhase === 2 || currentPhase === 4) {
           shapeOpacity = Math.min(1, shapeOpacity + 0.025);
         } else {
           shapeOpacity = Math.max(0, shapeOpacity - 0.02);
         }
-      } else {
+      } else if (!activeLanding) {
         shapeOpacity = 0;
-        if (lastPhase !== 1) {
-          lastPhase = 1;
-          releaseParticles();
-        }
       }
 
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, width, height);
+
+      let visibleCount = 0;
 
       // Draw and update particles
       for (let i = 0; i < particles.length; i++) {
@@ -342,7 +442,18 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
         p.alpha = p.baseAlpha + Math.sin(time * p.twinkleSpeed * 50 + i) * 0.15;
         p.alpha = Math.max(0.1, Math.min(1, p.alpha));
 
-        if (p.state === 'drifting' || !activeLanding) {
+        if (!activeLanding || isExiting) {
+          // Smooth outward acceleration towards outer bounds
+          p.vx *= 1.018;
+          p.vy *= 1.018;
+          p.x += p.vx;
+          p.y += p.vy;
+
+          // Check if particle is still on screen (with 60px margin)
+          if (p.x >= -60 && p.x <= width + 60 && p.y >= -60 && p.y <= height + 60) {
+            visibleCount++;
+          }
+        } else if (p.state === 'drifting') {
           // Physics: Mouse repulsion only on desktop while drifting
           if (!isMobile) {
             const dx = mouse.x - p.x;
@@ -368,13 +479,15 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
           p.x += p.vx;
           p.y += p.vy;
 
-          // Wrap around screen boundaries with margin
+          // Wrap around screen boundaries with margin on landing page
           if (p.x < -10) p.x = width + 10;
           else if (p.x > width + 10) p.x = -10;
           if (p.y < -10) p.y = height + 10;
           else if (p.y > height + 10) p.y = -10;
+
+          visibleCount++;
         } else {
-          // Forming state: Smooth spring physics towards target
+          // Forming state: Smooth spring physics / lerp towards target
           const dx = p.targetX - p.x;
           const dy = p.targetY - p.y;
 
@@ -385,22 +498,30 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
 
           p.x += p.vx;
           p.y += p.vy;
+
+          visibleCount++;
         }
 
-        // Draw particle dot
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
-        ctx.fill();
-
-        // Extra soft halo on forming particles & prominent stars
-        const isForming = activeLanding && p.state === 'forming';
-        if (p.size > 1.8 || isForming) {
+        // Draw particle dot if within render bounds
+        if (p.x >= -50 && p.x <= width + 50 && p.y >= -50 && p.y <= height + 50) {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * (isForming ? 1.6 : 2), 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(186, 230, 253, ${p.alpha * 0.3})`;
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
           ctx.fill();
+
+          // Extra soft halo on forming particles & prominent stars
+          const isForming = activeLanding && p.state === 'forming';
+          if (p.size > 1.8 || isForming) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (isForming ? 1.6 : 2), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(186, 230, 253, ${p.alpha * 0.3})`;
+            ctx.fill();
+          }
         }
+      }
+
+      if (!activeLanding && visibleCount === 0) {
+        isCompletelyOffscreen = true;
       }
 
       // Constellation Effect: Draw connecting lines only when forming shapes on landing page
@@ -433,7 +554,8 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      releaseParticlesRef.current = null;
+      triggerExitRef.current = null;
+      triggerEnterRef.current = null;
       window.removeEventListener('resize', handleResize);
       if (!isMobile) {
         window.removeEventListener('mousemove', handleMouseMove);
