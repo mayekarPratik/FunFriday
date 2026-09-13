@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import {
   Smartphone,
@@ -13,6 +13,14 @@ import {
   Play,
   AlertCircle
 } from 'lucide-react';
+
+const FLAVOR_TEXTS = [
+  'Trust no one.',
+  'The village is sleeping...',
+  'Prepare to lie.',
+  'Who is the wolf?',
+  'Deception loading...'
+];
 
 export const LandingPage: React.FC = () => {
   const {
@@ -29,6 +37,45 @@ export const LandingPage: React.FC = () => {
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Rotating Flavor Text
+  const [flavorIndex, setFlavorIndex] = useState(0);
+  const [fadeState, setFadeState] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFadeState(false);
+      setTimeout(() => {
+        setFlavorIndex((prev) => (prev + 1) % FLAVOR_TEXTS.length);
+        setFadeState(true);
+      }, 300);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 3D Card Parallax Tilt (Desktop only)
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [cardTransform, setCardTransform] = useState('perspective(1000px) rotateX(0deg) rotateY(0deg)');
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Skip on touch/mobile
+    if (window.innerWidth < 1024) return;
+
+    const { clientX, clientY } = e;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    // Subtle 3-5 degree tilt
+    const rotateY = ((clientX - centerX) / centerX) * 4;
+    const rotateX = -((clientY - centerY) / centerY) * 4;
+
+    setCardTransform(`perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`);
+  };
+
+  const handleMouseLeave = () => {
+    setCardTransform('perspective(1000px) rotateX(0deg) rotateY(0deg)');
+  };
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,22 +132,54 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center lg:justify-end lg:pr-32 px-4 py-8 select-none relative z-0">
+    <div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="min-h-screen w-full flex items-center justify-center lg:justify-end lg:pr-32 px-4 py-8 select-none relative z-0"
+    >
       {/* Master Frosted Glass Card - Matching Host Dashboard */}
-      <div className="w-full max-w-md p-8 bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl shadow-xl relative flex flex-col items-center text-center">
+      <div
+        ref={cardRef}
+        style={{ transform: cardTransform }}
+        className="w-full max-w-md p-8 bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl shadow-xl relative flex flex-col items-center text-center transition-transform duration-200 ease-out"
+      >
+        {/* Server Uplink Status Indicator (Top Right) */}
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 border border-white/5 backdrop-blur-sm">
+          {isConnected ? (
+            <>
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-[10px] text-green-500/80 uppercase tracking-widest font-mono">
+                Uplink Active
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 animate-pulse"></span>
+              </span>
+              <span className="text-[10px] text-red-400 uppercase tracking-widest font-mono">
+                Connection Lost
+              </span>
+            </>
+          )}
+        </div>
+
         {/* Subtle interior glow */}
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#3B82F6]/15 blur-3xl rounded-full pointer-events-none -z-10" />
 
         {/* Title & Moon Icon Flex Container */}
-        <div className="w-full flex items-center justify-center lg:justify-start gap-4 mb-2">
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
+        <div className="w-full flex items-center justify-center lg:justify-start gap-4 mb-2 mt-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             className="w-10 h-10 text-white animate-moon-breathe shrink-0"
           >
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -110,9 +189,15 @@ export const LandingPage: React.FC = () => {
           </h1>
         </div>
 
-        <p className="w-full text-gray-400 mt-1 mb-8 text-sm text-center lg:text-left">
-          A Multiplayer Party Game • Created by Pratik Mayekar
-        </p>
+        {/* Rotating Dynamic Subtitle - Centered */}
+        <div className="w-full h-6 mb-6 flex items-center justify-center text-center">
+          <p
+            className={`text-sm text-gray-400 font-medium tracking-wide transition-opacity duration-500 ${fadeState ? 'opacity-100' : 'opacity-0'
+              }`}
+          >
+            {FLAVOR_TEXTS[flavorIndex]}
+          </p>
+        </div>
 
         {/* Sleek Segmented Pill Toggle */}
         <div className="flex p-1 bg-gray-900/90 rounded-full border border-gray-800 backdrop-blur-md mb-6 w-full max-w-xs shadow-inner">
@@ -123,11 +208,10 @@ export const LandingPage: React.FC = () => {
               setLocalError(null);
               clearErrors();
             }}
-            className={`flex-1 py-2 px-4 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              mode === 'join'
-                ? 'bg-gray-700 text-white shadow'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
+            className={`flex-1 py-2 px-4 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${mode === 'join'
+              ? 'bg-gray-700 text-white shadow'
+              : 'text-gray-500 hover:text-gray-300'
+              }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
             <span>Join Game</span>
@@ -140,11 +224,10 @@ export const LandingPage: React.FC = () => {
               setLocalError(null);
               clearErrors();
             }}
-            className={`flex-1 py-2 px-4 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              mode === 'host'
-                ? 'bg-gray-700 text-white shadow'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
+            className={`flex-1 py-2 px-4 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${mode === 'host'
+              ? 'bg-gray-700 text-white shadow'
+              : 'text-gray-500 hover:text-gray-300'
+              }`}
           >
             <Tv className="w-3.5 h-3.5" />
             <span>Host Game</span>
@@ -279,6 +362,13 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Card Bottom Attribution */}
+        <div className="w-full pt-6 mt-2 border-t border-white/5 text-center">
+          <p className="text-[11px] font-mono text-gray-500 tracking-wide">
+            A Multiplayer Party Game • Created by Pratik Mayekar
+          </p>
         </div>
       </div>
     </div>
