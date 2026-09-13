@@ -32,6 +32,7 @@ interface GameStore {
   getMyPlayer: () => Player | undefined;
 
   // Actions
+  setConnected: (connected: boolean) => void;
   initSocket: (serverUrl?: string) => void;
   setActiveRoleMode: (mode: UserRoleMode) => void;
   createRoom: () => Promise<CreateRoomResponse>;
@@ -63,6 +64,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   activeRoleMode: null,
   role_settings: { ...DEFAULT_ROLE_SETTINGS },
   settings: { ...DEFAULT_GAME_SETTINGS },
+
+  setConnected: (connected: boolean) => set({ isConnected: connected }),
 
   getMyPlayer: () => {
     const { gameState, socket, myPlayerName } = get();
@@ -97,8 +100,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     newSocket.on('connect', () => {
       console.log('[Socket] Connected:', newSocket.id);
+      get().setConnected(true);
       set({
-        isConnected: true,
         isConnecting: false,
         connectionError: null
       });
@@ -106,8 +109,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     newSocket.on('disconnect', (reason) => {
       console.warn('[Socket] Disconnected:', reason);
+      get().setConnected(false);
       set({
-        isConnected: false,
         isConnecting: false
       });
     });
@@ -126,6 +129,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({
         lastActionError: err?.message || 'Server error'
       });
+    });
+
+    newSocket.on('room_created', (data: { room_code: string; state: GameState }) => {
+      console.log('[Socket] room_created received:', data);
+      if (data?.state) {
+        set({
+          gameState: data.state,
+          activeRoleMode: 'host',
+          lastActionError: null
+        });
+      }
     });
 
     newSocket.on('game_state_update', (newState: GameState) => {

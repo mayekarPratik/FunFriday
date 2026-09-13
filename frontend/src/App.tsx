@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useGameStore } from './store/gameStore';
-import { HostEntry } from './components/HostEntry';
-import { PlayerEntry } from './components/PlayerEntry';
 import { HostDashboard } from './components/HostDashboard';
 import { PlayerWaiting } from './components/PlayerWaiting';
 import { HostNightDisplay } from './components/HostNightDisplay';
@@ -9,7 +7,9 @@ import { HostDayDisplay } from './components/HostDayDisplay';
 import { PlayerDayVoting } from './components/PlayerDayVoting';
 import { GameOverDisplay } from './components/GameOverDisplay';
 import { PlayerView } from './views/PlayerView';
-import { Wifi, WifiOff, RefreshCw, AlertCircle, Shield, Tv, Smartphone } from 'lucide-react';
+import { LandingPage } from './views/LandingPage';
+import { ServerWakeupModal } from './components/ServerWakeupModal';
+import { Wifi, WifiOff, RefreshCw, AlertCircle, Shield } from 'lucide-react';
 
 export const App: React.FC = () => {
   const {
@@ -23,21 +23,37 @@ export const App: React.FC = () => {
     clearErrors
   } = useGameStore();
 
-  const [entryMode, setEntryMode] = useState<'host' | 'player'>('host');
-
   useEffect(() => {
     initSocket();
   }, [initSocket]);
 
+  const hasRoomCode = Boolean(gameState?.room_code);
   const isHost = activeRoleMode === 'host';
+
+  // If no room is joined / created yet, render the OLED Landing Page
+  if (!hasRoomCode) {
+    return (
+      <>
+        {!isConnected && <ServerWakeupModal />}
+        <LandingPage />
+      </>
+    );
+  }
 
   // If in active game and not host, delegate all player rendering (including dead spectator mode) to PlayerView
   if (gameState && !isHost && gameState.phase !== 'game_over') {
-    return <PlayerView />;
+    return (
+      <>
+        {!isConnected && <ServerWakeupModal />}
+        <PlayerView />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] flex flex-col justify-between selection:bg-[#3B82F6]/30">
+      {/* Global Server Wake-Up Overlay for Render.com cold starts */}
+      {!isConnected && <ServerWakeupModal />}
       {/* Header bar */}
       <header className="h-16 border-b border-[#1F2430] bg-[#090A0F]/90 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
@@ -45,36 +61,11 @@ export const App: React.FC = () => {
             <Shield className="w-4 h-4" />
           </div>
           <span className="font-bold tracking-wider text-sm uppercase text-[#F8FAFC]">
-            Social Deduction Engine
+            FunFriday Games
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* View toggle in entry screen */}
-          {!gameState && (
-            <div className="hidden sm:flex items-center p-1 rounded-lg bg-[#12141C] border border-[#1F2430] text-xs">
-              <button
-                onClick={() => setEntryMode('host')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition font-medium cursor-pointer ${
-                  entryMode === 'host'
-                    ? 'bg-[#3B82F6] text-white'
-                    : 'text-[#94A3B8] hover:text-[#F8FAFC]'
-                }`}
-              >
-                <Tv className="w-3.5 h-3.5" /> Host
-              </button>
-              <button
-                onClick={() => setEntryMode('player')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition font-medium cursor-pointer ${
-                  entryMode === 'player'
-                    ? 'bg-[#3B82F6] text-white'
-                    : 'text-[#94A3B8] hover:text-[#F8FAFC]'
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" /> Player
-              </button>
-            </div>
-          )}
 
           {/* Connection Status Indicator */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1F2430] bg-[#12141C] text-xs font-mono">
@@ -122,7 +113,7 @@ export const App: React.FC = () => {
           )}
 
           {/* Dynamic Game Phase Routing */}
-          {gameState ? (
+          {gameState && (
             gameState.phase === 'game_over' ? (
               <GameOverDisplay />
             ) : gameState.phase === 'night' || gameState.phase === 'morning_recap' || gameState.phase === 'dusk_recap' ? (
@@ -138,17 +129,13 @@ export const App: React.FC = () => {
             ) : (
               <PlayerWaiting />
             )
-          ) : entryMode === 'host' ? (
-            <HostEntry onSwitchToPlayer={() => setEntryMode('player')} />
-          ) : (
-            <PlayerEntry onSwitchToHost={() => setEntryMode('host')} />
           )}
         </div>
       </main>
 
       {/* Footer */}
       <footer className="py-4 border-t border-[#1F2430] bg-[#090A0F] text-center text-xs text-[#94A3B8]">
-        <span>Jackbox-style Social Deduction Engine • Designed with Wope UI</span>
+        <span>A Multiplayer Party Game • Created by Pratik Mayekar</span>
       </footer>
     </div>
   );

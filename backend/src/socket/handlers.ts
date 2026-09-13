@@ -85,6 +85,10 @@ export function registerSocketHandlers(io: Server): void {
         await socket.join(socketRoom);
 
         console.log(`[Room Created] Code: ${roomCode} by Host: ${socket.id}`);
+        socket.emit('room_created', {
+          room_code: roomCode,
+          state: initialState
+        });
         broadcastGameState(io, initialState);
 
         if (typeof callback === 'function') {
