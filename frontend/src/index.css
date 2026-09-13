@@ -119,3 +119,33 @@
 .animate-pulse-glow {
   animation: pulse-glow 4s ease-in-out infinite;
 }
+
+/* Starry Night Slow-Pan Background */
+@keyframes slowPan {
+  0% {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  50% {
+    background-position: 300px 600px, -400px 300px, 200px -500px;
+  }
+  100% {
+    background-position: 0 0, 0 0, 0 0;
+  }
+}
+
+.bg-night-sky {
+  background-color: #000000;
+  background-image: 
+    radial-gradient(1px 1px at 25px 35px, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0)),
+    radial-gradient(1.5px 1.5px at 120px 80px, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0)),
+    radial-gradient(1px 1px at 220px 190px, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0)),
+    radial-gradient(2px 2px at 340px 110px, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0)),
+    radial-gradient(1.5px 1.5px at 450px 290px, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0)),
+    radial-gradient(1px 1px at 580px 70px, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0)),
+    radial-gradient(2px 2px at 700px 220px, rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0));
+  background-size: 650px 650px, 800px 800px, 950px 950px, 500px 500px, 750px 750px, 600px 600px, 850px 850px;
+  background-repeat: repeat;
+  animation: slowPan 150s linear infinite;
+  will-change: background-position;
+}
+

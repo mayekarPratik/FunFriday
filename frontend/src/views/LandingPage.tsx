@@ -80,7 +80,7 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#090A0F] text-[#F8FAFC] flex flex-col justify-between p-4 sm:p-8 select-none relative overflow-hidden">
+    <div className="min-h-screen w-full text-[#F8FAFC] flex flex-col justify-between p-4 sm:p-8 select-none relative overflow-hidden z-0">
       {/* Background Ambience / Glow Elements */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#3B82F6]/10 blur-[130px] rounded-full pointer-events-none -z-10" />
       <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-600/5 blur-[100px] rounded-full pointer-events-none -z-10" />

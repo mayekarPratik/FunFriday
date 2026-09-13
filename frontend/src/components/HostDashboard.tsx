@@ -329,15 +329,20 @@ export const HostDashboard: React.FC = () => {
       </div>
 
       {/* Main Grid: Deck Builder on Left, Joined Players on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Deck Builder Configuration Menu (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col gap-4">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-[#3B82F6]" />
-              <h2 className="text-lg font-bold text-[#F8FAFC]">Role Configuration</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Deck Builder Configuration Card (7 cols) */}
+        <div className="lg:col-span-7 wope-card p-6 sm:p-7 flex flex-col gap-5 border border-[#1F2430] bg-[#12141C]/80 backdrop-blur-md shadow-2xl relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#1F2430] pb-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
+                <Sliders className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white tracking-wide">Role Configuration</h2>
+                <p className="text-[11px] text-[#94A3B8]">Adjust active roles in the deck</p>
+              </div>
             </div>
-            <span className="text-xs font-mono text-[#94A3B8]">
+            <span className="wope-badge bg-[#191C28] text-gray-200 border-[#1F2430] text-xs font-mono">
               {ROLE_CONFIG_ORDER.length} Available Roles
             </span>
           </div>
@@ -352,10 +357,10 @@ export const HostDashboard: React.FC = () => {
               return (
                 <div
                   key={roleKey}
-                  className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
+                  className={`p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
                     count > 0
-                      ? `${role.bgColor} ${role.borderColor} shadow-md`
-                      : 'bg-[#12141C] border-[#1F2430] opacity-80'
+                      ? `${role.bgColor} ${role.borderColor} shadow-md backdrop-blur-sm`
+                      : 'bg-[#090A0F]/60 border-[#1F2430] hover:border-neutral-700'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -367,11 +372,11 @@ export const HostDashboard: React.FC = () => {
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-sm text-[#F8FAFC] truncate">
+                        <span className="font-bold text-sm text-white truncate">
                           {role.name}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#94A3B8] truncate">
+                      <p className="text-[11px] text-gray-300 truncate">
                         {role.desc}
                       </p>
                     </div>
@@ -383,14 +388,14 @@ export const HostDashboard: React.FC = () => {
                       type="button"
                       onClick={() => handleDecrement(roleKey)}
                       disabled={count <= 0}
-                      className="w-7 h-7 rounded-lg bg-[#090A0F] border border-[#1F2430] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                      className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-gray-500 disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center text-white hover:text-blue-400 transition active:scale-95 cursor-pointer shadow-sm"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-3.5 h-3.5" />
                     </button>
 
                     <span
-                      className={`w-6 text-center font-mono font-bold text-sm ${
-                        count > 0 ? role.color : 'text-neutral-500'
+                      className={`w-6 text-center font-mono font-black text-sm ${
+                        count > 0 ? role.color : 'text-gray-500'
                       }`}
                     >
                       {count}
@@ -399,9 +404,9 @@ export const HostDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleIncrement(roleKey)}
-                      className="w-7 h-7 rounded-lg bg-[#090A0F] border border-[#1F2430] hover:border-neutral-500 flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                      className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-gray-500 flex items-center justify-center text-white hover:text-blue-400 transition active:scale-95 cursor-pointer shadow-sm"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -410,7 +415,7 @@ export const HostDashboard: React.FC = () => {
           </div>
 
           {/* Game Settings Control Panel */}
-          <div className="wope-card p-5 flex flex-col gap-4 border border-[#1F2430] bg-[#12141C]/80 mt-2">
+          <div className="p-4 rounded-xl flex flex-col gap-3.5 border border-[#1F2430] bg-[#090A0F]/60 backdrop-blur-sm mt-1">
             <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-[#3B82F6]" />
@@ -527,24 +532,29 @@ export const HostDashboard: React.FC = () => {
         </div>
 
         {/* Right Column: Joined Players List (5 cols) */}
-        <div className="lg:col-span-5 flex flex-col gap-4">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#3B82F6]" />
-              <h2 className="text-lg font-bold text-[#F8FAFC]">Joined Players</h2>
+        <div className="lg:col-span-5 wope-card p-6 sm:p-7 flex flex-col gap-5 border border-[#1F2430] bg-[#12141C]/80 backdrop-blur-md shadow-2xl relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#1F2430] pb-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white tracking-wide">Joined Players</h2>
+                <p className="text-[11px] text-[#94A3B8]">Connected client roster</p>
+              </div>
             </div>
-            <span className="text-xs font-mono text-[#94A3B8]">
+            <span className="wope-badge bg-[#191C28] text-gray-200 border-[#1F2430] text-xs font-mono">
               {playersJoinedCount} Connected
             </span>
           </div>
 
           {playersJoinedCount === 0 ? (
-            <div className="wope-card p-10 text-center flex flex-col items-center justify-center gap-3 border-dashed h-full min-h-[260px]">
+            <div className="p-8 text-center flex flex-col items-center justify-center gap-3 border border-dashed border-[#1F2430] rounded-xl bg-[#090A0F]/50 h-full min-h-[260px]">
               <div className="w-12 h-12 rounded-full bg-[#191C28] border border-[#1F2430] flex items-center justify-center text-[#94A3B8] animate-pulse">
                 <Users className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="font-semibold text-[#F8FAFC] text-sm">
+                <h3 className="font-semibold text-white text-sm">
                   Waiting for Players...
                 </h3>
                 <p className="text-xs text-[#94A3B8] max-w-xs mx-auto">
@@ -557,7 +567,7 @@ export const HostDashboard: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5 max-h-[500px] overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-1">
               {gameState.players.map((player, index) => {
                 const isHostSocket = player.socket_id === gameState.host_socket_id;
                 const isAlive = player.is_alive;
@@ -565,10 +575,10 @@ export const HostDashboard: React.FC = () => {
                 return (
                   <div
                     key={player.socket_id}
-                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 animate-fadeIn ${
+                    className={`p-3 rounded-xl border transition flex items-center justify-between gap-3 animate-fadeIn ${
                       isAlive
-                        ? 'bg-[#12141C] border-[#1F2430]'
-                        : 'bg-black/50 border-neutral-900 opacity-60'
+                        ? 'bg-[#090A0F]/70 border-[#1F2430] backdrop-blur-sm'
+                        : 'bg-black/60 border-neutral-900 opacity-60'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
