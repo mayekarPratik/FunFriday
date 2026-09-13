@@ -7,10 +7,11 @@ export const GameOverDisplay: React.FC = () => {
 
   if (!gameState) return null;
 
-  const winner = gameState.winner || 'villagers';
+  const winner = gameState.winner || 'town';
   const isWolvesWin = winner === 'wolves';
   const isJesterWin = winner === 'jester';
   const isExecutionerWin = winner === 'executioner';
+  const isLoversWin = winner === 'lovers';
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center gap-8 py-8">
@@ -21,6 +22,8 @@ export const GameOverDisplay: React.FC = () => {
           className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 blur-3xl rounded-full pointer-events-none ${
             isWolvesWin
               ? 'bg-red-600/20'
+              : isLoversWin
+              ? 'bg-pink-600/20'
               : isJesterWin || isExecutionerWin
               ? 'bg-purple-600/20'
               : 'bg-emerald-600/20'
@@ -30,6 +33,8 @@ export const GameOverDisplay: React.FC = () => {
         <div className="w-24 h-24 rounded-3xl bg-[#191C28] border border-[#1F2430] flex items-center justify-center mb-6 shadow-2xl">
           {isWolvesWin ? (
             <Skull className="w-14 h-14 text-red-500 animate-bounce" />
+          ) : isLoversWin ? (
+            <Trophy className="w-14 h-14 text-pink-400 animate-bounce" />
           ) : isJesterWin || isExecutionerWin ? (
             <Trophy className="w-14 h-14 text-purple-400 animate-bounce" />
           ) : (
@@ -40,6 +45,8 @@ export const GameOverDisplay: React.FC = () => {
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono uppercase tracking-widest mb-3 border bg-[#090A0F]/80">
           {isWolvesWin ? (
             <span className="text-red-400">🐺 THE PACK PREVAILS</span>
+          ) : isLoversWin ? (
+            <span className="text-pink-400">❤️ LOVE CONQUERS ALL</span>
           ) : isJesterWin ? (
             <span className="text-purple-400">🃏 THE JESTER TRICKED EVERYONE</span>
           ) : isExecutionerWin ? (
@@ -52,15 +59,19 @@ export const GameOverDisplay: React.FC = () => {
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-[#F8FAFC] mb-3">
           {isWolvesWin
             ? 'Werewolves Win!'
+            : isLoversWin
+            ? 'Lovers Win!'
             : isJesterWin
             ? 'Jester Wins!'
             : isExecutionerWin
             ? 'Executioner Wins!'
-            : 'Villagers Win!'}
+            : 'Town Wins!'}
         </h1>
         <p className="text-sm sm:text-base text-[#94A3B8] max-w-md mb-8">
           {isWolvesWin
             ? 'The Werewolves successfully outnumbered the innocent townspeople.'
+            : isLoversWin
+            ? 'The two secret lovers survived together until the very end.'
             : isJesterWin
             ? 'The Jester successfully baited the village into voting them out during the day!'
             : isExecutionerWin

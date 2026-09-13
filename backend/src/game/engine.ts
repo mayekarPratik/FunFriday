@@ -1,26 +1,84 @@
 import { Server } from 'socket.io';
-import { GameState, RoleType, MASTER_NIGHT_ORDER, NightActionPayload, ROLE_PRIORITIES, Player } from '../types/game';
+import {
+  GameState,
+  RoleType,
+  MASTER_NIGHT_ORDER,
+  NightActionPayload,
+  ROLE_PRIORITIES,
+  Player,
+  WinnerType
+} from '../types/game';
 import { saveGameState, ROOM_TTL_SECONDS } from '../services/redis';
 
 export const getSocketRoomName = (roomCode: string): string => `lobby:${roomCode.toUpperCase()}`;
 
-/**
- * Checks win conditions:
- * - Wolves win: alive wolves >= alive non-wolves
- * - Villagers win: alive wolves === 0
- */
-export function evaluateWinConditions(state: GameState): 'wolves' | 'villagers' | null {
-  const alivePlayers = state.players.filter((p) => p.is_alive);
-  const aliveWolves = alivePlayers.filter((p) => p.role === 'wolf').length;
-  const aliveNonWolves = alivePlayers.length - aliveWolves;
+export interface WinConditionResult {
+  game_over: boolean;
+  winner?: WinnerType;
+}
 
-  if (aliveWolves === 0) {
-    return 'villagers';
+/**
+ * Checks win conditions across game phases:
+ * 1. Neutral Wins (Highest Priority, evaluated if called from a day vote):
+ *    - Executed player is 'jester' -> { game_over: true, winner: 'jester' }
+ *    - Executed player matches Executioner's target_id -> { game_over: true, winner: 'executioner' }
+ * 2. Lover Wins:
+ *    - Exactly 2 living players and their IDs match state.lovers array -> { game_over: true, winner: 'lovers' }
+ * 3. Wolf Wins:
+ *    - aliveWolves >= (totalAlive - aliveWolves) -> { game_over: true, winner: 'wolves' }
+ * 4. Town Wins:
+ *    - aliveWolves === 0 -> { game_over: true, winner: 'town' }
+ * 5. Continue Game:
+ *    - Otherwise -> { game_over: false }
+ */
+export function checkWinCondition(
+  state: GameState,
+  context?: { isDayVote?: boolean; executedPlayer?: Player | null }
+): WinConditionResult {
+  // 1. Neutral Wins (Highest Priority): If called from a day vote
+  if (context?.isDayVote && context.executedPlayer) {
+    const executed = context.executedPlayer;
+
+    // If executed player's role is 'jester'
+    if (executed.role === 'jester') {
+      return { game_over: true, winner: 'jester' };
+    }
+
+    // If executed player matches Executioner's target_id
+    const executionerTargetId = state.role_states?.executioner?.target_id;
+    if (executionerTargetId && executed.socket_id === executionerTargetId) {
+      return { game_over: true, winner: 'executioner' };
+    }
   }
+
+  const alivePlayers = state.players.filter((p) => p.is_alive);
+  const totalAlive = alivePlayers.length;
+
+  // 2. Lover Wins: If only 2 players are alive, and their IDs match state.lovers array
+  if (totalAlive === 2 && state.lovers && state.lovers.length === 2) {
+    const aliveSocketIds = alivePlayers.map((p) => p.socket_id);
+    const isLoversWin =
+      aliveSocketIds.includes(state.lovers[0]) && aliveSocketIds.includes(state.lovers[1]);
+    if (isLoversWin) {
+      return { game_over: true, winner: 'lovers' };
+    }
+  }
+
+  const aliveWolves = alivePlayers.filter((p) => p.role === 'wolf').length;
+  const aliveNonWolves = totalAlive - aliveWolves;
+
+  // 3. Wolf Wins: If aliveWolves >= (totalAlive - aliveWolves)
   if (aliveWolves >= aliveNonWolves) {
-    return 'wolves';
+    return { game_over: true, winner: 'wolves' };
   }
-  return null;
+
+  // 4. Town Wins: If aliveWolves === 0
+  if (aliveWolves === 0) {
+    return { game_over: true, winner: 'town' };
+  }
+
+  // 5. Continue Game: If none of these are met
+  return { game_over: false };
 }
 
 /**
@@ -182,11 +240,11 @@ export function resolveDaybreak(state: GameState): void {
   state.night_queue = [];
   state.votes = {};
 
-  // Check win conditions
-  const winner = evaluateWinConditions(state);
-  if (winner) {
+  // Check win conditions at end of resolveDaybreak
+  const winResult = checkWinCondition(state);
+  if (winResult.game_over) {
     state.phase = 'game_over';
-    state.winner = winner;
+    state.winner = winResult.winner;
     state.timer_ends_at = null;
   } else {
     // 5-minute countdown for Day phase
@@ -247,27 +305,15 @@ export function resolveDayVote(state: GameState): GameState {
   state.votes = {};
   state.timer_ends_at = null;
 
-  // 1. Jester Win Condition: If player with most votes is the Jester
-  if (eliminatedPlayer && eliminatedPlayer.role === 'jester') {
-    state.phase = 'game_over';
-    state.winner = 'jester';
-    return state;
-  }
+  // Check win conditions at end of resolveDayVote
+  const winResult = checkWinCondition(state, {
+    isDayVote: true,
+    executedPlayer: eliminatedPlayer || null
+  });
 
-  // 2. Executioner Win Condition: If player with most votes matches Executioner's target_id
-  const executionerTargetId = state.role_states?.executioner?.target_id;
-  const livingExecutioner = state.players.find((p) => p.role === 'executioner' && p.is_alive);
-  if (eliminatedSocketId && executionerTargetId && eliminatedSocketId === executionerTargetId && livingExecutioner) {
+  if (winResult.game_over) {
     state.phase = 'game_over';
-    state.winner = 'executioner';
-    return state;
-  }
-
-  // 3. Standard win conditions (Wolves vs Villagers)
-  const winner = evaluateWinConditions(state);
-  if (winner) {
-    state.phase = 'game_over';
-    state.winner = winner;
+    state.winner = winResult.winner;
   } else {
     // Shift back to Night phase with fresh dynamic night_queue
     initializeNightPhase(state);
@@ -431,6 +477,7 @@ export async function handleNightAction(
   // If Cupid, link lovers
   if (role === 'cupid' && payload.target_socket_ids && payload.target_socket_ids.length === 2) {
     const [p1, p2] = payload.target_socket_ids;
+    state.lovers = [p1, p2];
     state.players.forEach((player) => {
       if (player.socket_id === p1 || player.socket_id === p2) {
         player.is_lover = true;

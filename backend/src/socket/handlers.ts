@@ -19,7 +19,7 @@ import {
   handleNightAction,
   resolveDaybreak,
   resolveDayVote,
-  evaluateWinConditions,
+  checkWinCondition,
   getSocketRoomName,
   broadcastGameState
 } from '../game/engine';

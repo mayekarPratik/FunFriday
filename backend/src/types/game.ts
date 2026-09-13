@@ -81,6 +81,8 @@ export interface NightActionPayload {
   [key: string]: any;
 }
 
+export type WinnerType = 'wolves' | 'villagers' | 'town' | 'jester' | 'executioner' | 'lovers' | null;
+
 export interface GameState {
   room_code: string;
   phase: GamePhase;
@@ -92,11 +94,12 @@ export interface GameState {
   role_states?: RoleStates;
   role_settings?: RoleSettings;
   players: Player[];
+  lovers?: string[]; // socket IDs of linked lovers
   last_night_killed?: string | null;
   last_day_eliminated?: string | null;
   votes?: Record<string, string>; // voter_socket_id -> target_socket_id
   timer_ends_at?: number | null;
-  winner?: 'wolves' | 'villagers' | 'jester' | 'executioner' | null;
+  winner?: WinnerType;
 }
 
 export interface CreateRoomResponse {
