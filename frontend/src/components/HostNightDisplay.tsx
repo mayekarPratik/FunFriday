@@ -5,8 +5,9 @@ import { Moon, Sun, Skull, Flame, ChevronRight } from 'lucide-react';
 export const NIGHT_ATMOSPHERE_TEXT: Record<string, string> = {
   wolf: 'The Werewolves are on the hunt...',
   doctor: 'The Doctor is making their rounds...',
-  seer: 'The Seer is peering into the future...',
   witch: 'The Witch is brewing potions...',
+  sheriff: 'The Sheriff is loading a silver bullet...',
+  seer: 'The Seer is peering into the future...',
   cupid: 'Cupid is aiming their arrows...',
   serial_killer: 'A shadowy figure stalks the alleys...',
   villager: 'The town is sleeping...',

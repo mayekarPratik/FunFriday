@@ -228,9 +228,22 @@ export const NightPhase: React.FC = () => {
   }
 
   const myPriority = ROLE_PRIORITIES[myRole] ?? 0;
+  const sheriffBulletCount = myRole === 'sheriff'
+    ? (gameState?.role_states?.sheriff?.bullet_count ?? (gameState?.role_states?.sheriff?.has_bullet ? 1 : 0))
+    : 0;
+  const hasSheriffBullet = myRole === 'sheriff' ? sheriffBulletCount > 0 : true;
   const isMyTurn =
-    (gameState.active_role && gameState.active_role === myRole) ||
-    (myPriority > 0 && gameState.active_role_priority === myPriority);
+    ((gameState.active_role && gameState.active_role === myRole) ||
+    (myPriority > 0 && gameState.active_role_priority === myPriority)) &&
+    (myRole !== 'sheriff' || hasSheriffBullet);
+
+  const handleSkipSheriffTurn = () => {
+    clearAllTimers();
+    submitNightAction({ action_type: 'kill', target_socket_id: '' });
+    setIsRevealed(false);
+    setActionConfirmed(true);
+    setTimeLeftMs(revealDurationMs);
+  };
 
   // If local player is the Witch and it is the Witch's active turn, render WitchAction
   if (myRole === 'witch' && (gameState.active_role === 'witch' || isMyTurn)) {
@@ -308,6 +321,11 @@ export const NightPhase: React.FC = () => {
                       <Heart className="w-8 h-8" />
                     </div>
                   )}
+                  {myRole === 'sheriff' && (
+                    <div className="w-14 h-14 rounded-2xl bg-blue-950/50 border border-blue-800/80 flex items-center justify-center text-blue-400 shadow-lg shadow-blue-950/50">
+                      <Shield className="w-8 h-8" />
+                    </div>
+                  )}
 
                   <span className="px-3 py-0.5 rounded-full text-xs font-mono uppercase tracking-widest border border-white/10 bg-white/5 text-neutral-300">
                     YOUR ROLE: {myRole.toUpperCase()}
@@ -318,6 +336,7 @@ export const NightPhase: React.FC = () => {
                     {myRole === 'doctor' && 'Choose Who to Protect'}
                     {myRole === 'seer' && 'Inspect Alignment'}
                     {myRole === 'cupid' && 'Link Two Secret Lovers'}
+                    {myRole === 'sheriff' && 'Fire Silver Bullet'}
                   </h2>
                 </div>
 
@@ -364,13 +383,49 @@ export const NightPhase: React.FC = () => {
                   </div>
                 )}
 
+                {/* Sheriff Bullet Information & Skip Turn Button */}
+                {myRole === 'sheriff' && (
+                  <div className="w-full space-y-3">
+                    <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-900/50 text-left space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-blue-400 uppercase font-mono tracking-wide">
+                          Bullets Remaining: {sheriffBulletCount}
+                        </span>
+                        <span className="text-[10px] font-mono text-neutral-400">
+                          {sheriffBulletCount} {sheriffBulletCount === 1 ? 'shot' : 'shots'} left
+                        </span>
+                      </div>
+                      <p className="text-xs text-blue-300 leading-relaxed">
+                        Shoot a suspect tonight or save your ammunition for a future night.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSkipSheriffTurn}
+                      className="w-full py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 font-mono text-xs uppercase tracking-wider text-neutral-300 transition cursor-pointer"
+                    >
+                      Skip Turn (Save Bullet)
+                    </button>
+                  </div>
+                )}
+
                 {/* Role Specific Action Target Buttons */}
                 {(!seerResult || myRole !== 'seer') && (
                   <div className="w-full space-y-2 mt-2">
-                    <div className="text-[11px] font-mono uppercase text-neutral-500 text-left px-1">
-                      {myRole === 'cupid'
-                        ? 'Tap 2 players to select:'
-                        : 'Tap to submit action:'}
+                    <div className="text-[11px] font-mono uppercase text-neutral-500 text-left px-1 flex items-center justify-between">
+                      <span>
+                        {myRole === 'cupid'
+                          ? 'Tap 2 players to select:'
+                          : myRole === 'sheriff'
+                          ? 'Tap to shoot suspect:'
+                          : 'Tap to submit action:'}
+                      </span>
+                      {myRole === 'sheriff' && (
+                        <span className="text-blue-400 font-bold font-mono">
+                          Bullets: {sheriffBulletCount}
+                        </span>
+                      )}
                     </div>
 
                     {otherAlivePlayers.map((player) => {
@@ -413,6 +468,10 @@ export const NightPhase: React.FC = () => {
                               ) : (
                                 <span>Select</span>
                               )
+                            ) : myRole === 'sheriff' ? (
+                              <>
+                                <Crosshair className="w-3.5 h-3.5 text-blue-400" /> Shoot
+                              </>
                             ) : (
                               <>
                                 <Crosshair className="w-3.5 h-3.5" /> Target
@@ -439,6 +498,8 @@ export const NightPhase: React.FC = () => {
                       ? 'Plotting Trickery...'
                       : myRole === 'executioner'
                       ? 'Awaiting Day Trial...'
+                      : myRole === 'sheriff' && !hasSheriffBullet
+                      ? 'Out of Ammo'
                       : 'Sleeping...'}
                   </h2>
                   <p className="text-xs text-neutral-500 max-w-xs">
@@ -448,6 +509,8 @@ export const NightPhase: React.FC = () => {
                       ? 'You are the Jester. You have no night action. Try to get yourself voted out by day!'
                       : myRole === 'executioner'
                       ? 'You are the Executioner. Wait for daytime to accuse your target!'
+                      : myRole === 'sheriff' && !hasSheriffBullet
+                      ? 'You have depleted all of your silver bullets. Sleep peacefully through the night.'
                       : 'It is not your turn yet. The village is asleep while other creatures roam the shadows.'}
                   </p>
                 </div>

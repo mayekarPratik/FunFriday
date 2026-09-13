@@ -66,6 +66,17 @@ export const ROLES: Record<string, RoleDefinition> = {
     description: 'Awakens on Night 1 to bind two players together in love. If one lover perishes, the other dies of a broken heart.',
     isPassiveAtNight: false
   },
+  sheriff: {
+    id: 'sheriff',
+    name: 'Sheriff',
+    team: 'villagers',
+    colorTheme: 'bg-blue-600',
+    badgeBg: 'bg-blue-500/20',
+    badgeText: 'text-blue-400',
+    badgeBorder: 'border-blue-500/40',
+    description: 'You can wake up at night to shoot one player per game. Choose wisely, or you might kill an innocent.',
+    isPassiveAtNight: false
+  },
   villager: {
     id: 'villager',
     name: 'Villager',

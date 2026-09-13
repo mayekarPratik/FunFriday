@@ -4,7 +4,9 @@ export type RoleType =
   | 'cupid'
   | 'doctor'
   | 'wolf'
+  | 'werewolf'
   | 'witch'
+  | 'sheriff'
   | 'seer'
   | 'villager'
   | 'jester'
@@ -17,6 +19,7 @@ export const MASTER_NIGHT_ORDER: RoleType[] = [
   'wolf',
   'doctor',
   'witch',
+  'sheriff',
   'seer',
   'serial_killer',
   'executioner',
@@ -29,11 +32,12 @@ export const ROLE_PRIORITIES: Record<string, number> = {
   wolf: 2,
   doctor: 3,
   witch: 4,
-  seer: 5,
-  serial_killer: 6,
-  executioner: 7,
-  jester: 8,
-  villager: 9,
+  sheriff: 5,
+  seer: 6,
+  serial_killer: 7,
+  executioner: 8,
+  jester: 9,
+  villager: 10,
   '': 0
 };
 
@@ -54,33 +58,42 @@ export interface ExecutionerRoleState {
   target_id: string | null;
 }
 
+export interface SheriffRoleState {
+  has_bullet?: boolean;
+  bullet_count: number;
+}
+
 export interface RoleStates {
   witch?: WitchRoleState;
   executioner?: ExecutionerRoleState;
+  sheriff?: SheriffRoleState;
   [key: string]: any;
 }
 
 export interface RoleSettings {
-  wolf: number;
+  werewolf?: number;
+  wolf?: number;
   seer: number;
   doctor: number;
-  witch: number;
-  cupid: number;
   villager: number;
+  sheriff?: number;
   jester: number;
+  witch: number;
   executioner: number;
-  [key: string]: number;
+  cupid: number;
+  [key: string]: number | undefined;
 }
 
 export const DEFAULT_ROLE_SETTINGS: RoleSettings = {
-  wolf: 1,
+  werewolf: 1,
   seer: 1,
   doctor: 1,
-  witch: 1,
-  cupid: 1,
-  villager: 1,
-  jester: 1,
-  executioner: 1
+  villager: 2,
+  sheriff: 0,
+  jester: 0,
+  witch: 0,
+  executioner: 0,
+  cupid: 0
 };
 
 export interface NightActionPayload {
@@ -98,11 +111,13 @@ export type WinnerType = 'wolves' | 'villagers' | 'town' | 'jester' | 'execution
 export interface GameSettings {
   discussion_time_seconds: number;
   action_time_seconds: number;
+  sheriff_bullets: number;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   discussion_time_seconds: 300,
-  action_time_seconds: 6
+  action_time_seconds: 6,
+  sheriff_bullets: 1
 };
 
 export interface GameState {

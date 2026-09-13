@@ -6,6 +6,7 @@ import {
   RoleType,
   NightActionPayload,
   RoleSettings,
+  GameSettings,
   DEFAULT_ROLE_SETTINGS
 } from '../types/game';
 import {
@@ -59,12 +60,16 @@ export function registerSocketHandlers(io: Server): void {
             },
             executioner: {
               target_id: null
+            },
+            sheriff: {
+              bullet_count: 1
             }
           },
           role_settings: { ...DEFAULT_ROLE_SETTINGS },
           settings: {
             discussion_time_seconds: 300,
-            action_time_seconds: 6
+            action_time_seconds: 6,
+            sheriff_bullets: 1
           },
           players: [],
           votes: {},
@@ -141,7 +146,7 @@ export function registerSocketHandlers(io: Server): void {
      * Handler for 'update_room_settings'
      * Updates customizable timers (discussion_time_seconds, action_time_seconds)
      */
-    socket.on('update_room_settings', async (payload: { room_code?: string; settings?: { discussion_time_seconds?: number; action_time_seconds?: number }; discussion_time_seconds?: number; action_time_seconds?: number }, callback?: (response: any) => void) => {
+    socket.on('update_room_settings', async (payload: { room_code?: string; settings?: Partial<GameSettings> } & Partial<GameSettings>, callback?: (response: any) => void) => {
       try {
         let roomCode = payload?.room_code?.toUpperCase();
         if (!roomCode) {
@@ -161,8 +166,8 @@ export function registerSocketHandlers(io: Server): void {
           throw new Error('Only the host can update room settings');
         }
 
-        const settingsPayload = payload.settings || payload;
-        const currentSettings = state.settings || { discussion_time_seconds: 300, action_time_seconds: 6 };
+        const settingsPayload = (payload.settings || payload) as Partial<GameSettings>;
+        const currentSettings = state.settings || { discussion_time_seconds: 300, action_time_seconds: 6, sheriff_bullets: 1 };
 
         const discussionTime = typeof settingsPayload.discussion_time_seconds === 'number'
           ? Math.max(60, settingsPayload.discussion_time_seconds)
@@ -172,9 +177,14 @@ export function registerSocketHandlers(io: Server): void {
           ? Math.max(3, settingsPayload.action_time_seconds)
           : currentSettings.action_time_seconds;
 
+        const sheriffBullets = typeof settingsPayload.sheriff_bullets === 'number'
+          ? Math.min(5, Math.max(1, settingsPayload.sheriff_bullets))
+          : (currentSettings.sheriff_bullets ?? 1);
+
         state.settings = {
           discussion_time_seconds: discussionTime,
-          action_time_seconds: actionTime
+          action_time_seconds: actionTime,
+          sheriff_bullets: sheriffBullets
         };
 
         await saveGameState(state, ROOM_TTL_SECONDS);
@@ -292,12 +302,13 @@ export function registerSocketHandlers(io: Server): void {
         // 1. Read custom role_settings from Redis state (or fallback to defaults)
         const roleSettings: RoleSettings = state.role_settings || { ...DEFAULT_ROLE_SETTINGS };
 
-        // 2. Generate flat array of roles based on counts (e.g. { wolf: 2, villager: 3 } -> ['wolf', 'wolf', 'villager', 'villager', 'villager'])
+        // 2. Generate flat array of roles based on counts (e.g. { werewolf: 1, villager: 2 } -> ['wolf', 'villager', 'villager'])
         const deck: RoleType[] = [];
         Object.entries(roleSettings).forEach(([role, count]) => {
           const roleCount = Math.max(0, Number(count) || 0);
+          const normalizedRole: RoleType = role === 'werewolf' ? 'wolf' : (role as RoleType);
           for (let i = 0; i < roleCount; i++) {
-            deck.push(role as RoleType);
+            deck.push(normalizedRole);
           }
         });
 
@@ -330,7 +341,8 @@ export function registerSocketHandlers(io: Server): void {
           }
         }
 
-        // Initialize role states (Witch potions & Executioner target)
+        // Initialize role states (Witch potions, Executioner target, Sheriff bullets)
+        const sheriffBullets = state.settings?.sheriff_bullets ?? 1;
         state.role_states = {
           witch: {
             has_heal: true,
@@ -338,6 +350,9 @@ export function registerSocketHandlers(io: Server): void {
           },
           executioner: {
             target_id: executionerTargetId
+          },
+          sheriff: {
+            bullet_count: sheriffBullets
           }
         };
 

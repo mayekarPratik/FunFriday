@@ -23,10 +23,23 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Settings
+  Settings,
+  Shield
 } from 'lucide-react';
 import type { GameSettings } from '../types/game';
 import { DEFAULT_GAME_SETTINGS } from '../types/game';
+
+export const ROLE_CONFIG_ORDER: (keyof RoleSettings)[] = [
+  'werewolf',
+  'seer',
+  'doctor',
+  'villager',
+  'sheriff',
+  'jester',
+  'witch',
+  'executioner',
+  'cupid'
+];
 
 interface RoleConfigItem {
   id: keyof RoleSettings;
@@ -38,9 +51,9 @@ interface RoleConfigItem {
   borderColor: string;
 }
 
-const AVAILABLE_ROLES: RoleConfigItem[] = [
-  {
-    id: 'wolf',
+export const ROLE_CONFIG_MAP: Record<string, RoleConfigItem> = {
+  werewolf: {
+    id: 'werewolf',
     name: 'Werewolf',
     desc: 'Hunts villagers in secret each night',
     icon: Skull,
@@ -48,7 +61,7 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     bgColor: 'bg-red-950/30',
     borderColor: 'border-red-900/50'
   },
-  {
+  seer: {
     id: 'seer',
     name: 'Seer',
     desc: 'Inspects true identities at night',
@@ -57,7 +70,7 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     bgColor: 'bg-blue-950/30',
     borderColor: 'border-blue-900/50'
   },
-  {
+  doctor: {
     id: 'doctor',
     name: 'Doctor',
     desc: 'Heals one person from attacks each night',
@@ -66,25 +79,7 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     bgColor: 'bg-emerald-950/30',
     borderColor: 'border-emerald-900/50'
   },
-  {
-    id: 'witch',
-    name: 'Witch',
-    desc: 'Wields one heal and one lethal poison',
-    icon: FlaskConical,
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-950/30',
-    borderColor: 'border-purple-900/50'
-  },
-  {
-    id: 'cupid',
-    name: 'Cupid',
-    desc: 'Binds two secret lovers together',
-    icon: Heart,
-    color: 'text-pink-400',
-    bgColor: 'bg-pink-950/30',
-    borderColor: 'border-pink-900/50'
-  },
-  {
+  villager: {
     id: 'villager',
     name: 'Villager',
     desc: 'Deduces and votes out wolves by day',
@@ -93,7 +88,16 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     bgColor: 'bg-slate-900/40',
     borderColor: 'border-slate-800'
   },
-  {
+  sheriff: {
+    id: 'sheriff',
+    name: 'Sheriff',
+    desc: 'Holds a single silver bullet to eliminate a suspect',
+    icon: Shield,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-950/30',
+    borderColor: 'border-blue-900/50'
+  },
+  jester: {
     id: 'jester',
     name: 'Jester',
     desc: 'Neutral trickster who wins if voted out',
@@ -102,7 +106,16 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     bgColor: 'bg-purple-950/30',
     borderColor: 'border-purple-900/50'
   },
-  {
+  witch: {
+    id: 'witch',
+    name: 'Witch',
+    desc: 'Wields one heal and one lethal poison',
+    icon: FlaskConical,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-950/30',
+    borderColor: 'border-purple-900/50'
+  },
+  executioner: {
     id: 'executioner',
     name: 'Executioner',
     desc: 'Neutral assassin hunting an assigned target',
@@ -110,8 +123,17 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     color: 'text-purple-400',
     bgColor: 'bg-purple-950/30',
     borderColor: 'border-purple-900/50'
+  },
+  cupid: {
+    id: 'cupid',
+    name: 'Cupid',
+    desc: 'Binds two secret lovers together',
+    icon: Heart,
+    color: 'text-pink-400',
+    bgColor: 'bg-pink-950/30',
+    borderColor: 'border-pink-900/50'
   }
-];
+};
 
 export const HostDashboard: React.FC = () => {
   const { gameState, role_settings, settings, updateRoleSettings, updateRoomSettings, leaveRoom, startGame } = useGameStore();
@@ -124,8 +146,8 @@ export const HostDashboard: React.FC = () => {
   const currentSettings: RoleSettings = gameState.role_settings || role_settings;
   const currentRoomSettings: GameSettings = gameState.settings || settings || DEFAULT_GAME_SETTINGS;
 
-  const totalRolesInDeck = Object.entries(currentSettings).reduce(
-    (sum, [key, val]) => (typeof val === 'number' && key in currentSettings ? sum + val : sum),
+  const totalRolesInDeck = Object.values(currentSettings).reduce<number>(
+    (sum, val) => sum + (typeof val === 'number' ? val : 0),
     0
   );
 
@@ -166,6 +188,15 @@ export const HostDashboard: React.FC = () => {
     updateRoomSettings({
       ...currentRoomSettings,
       action_time_seconds: nextVal
+    });
+  };
+
+  const handleAdjustSheriffBullets = (delta: number) => {
+    const currentVal = currentRoomSettings.sheriff_bullets || 1;
+    const nextVal = Math.min(5, Math.max(1, currentVal + delta));
+    updateRoomSettings({
+      ...currentRoomSettings,
+      sheriff_bullets: nextVal
     });
   };
 
@@ -307,18 +338,20 @@ export const HostDashboard: React.FC = () => {
               <h2 className="text-lg font-bold text-[#F8FAFC]">Role Configuration</h2>
             </div>
             <span className="text-xs font-mono text-[#94A3B8]">
-              {AVAILABLE_ROLES.length} Available Roles
+              {ROLE_CONFIG_ORDER.length} Available Roles
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {AVAILABLE_ROLES.map((role) => {
+            {ROLE_CONFIG_ORDER.map((roleKey) => {
+              const role = ROLE_CONFIG_MAP[roleKey];
+              if (!role) return null;
               const RoleIcon = role.icon;
-              const count = currentSettings[role.id] || 0;
+              const count = currentSettings[roleKey] ?? (roleKey === 'werewolf' ? currentSettings['wolf'] : 0) ?? 0;
 
               return (
                 <div
-                  key={role.id}
+                  key={roleKey}
                   className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
                     count > 0
                       ? `${role.bgColor} ${role.borderColor} shadow-md`
@@ -348,7 +381,7 @@ export const HostDashboard: React.FC = () => {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleDecrement(role.id)}
+                      onClick={() => handleDecrement(roleKey)}
                       disabled={count <= 0}
                       className="w-7 h-7 rounded-lg bg-[#090A0F] border border-[#1F2430] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
                     >
@@ -365,7 +398,7 @@ export const HostDashboard: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => handleIncrement(role.id)}
+                      onClick={() => handleIncrement(roleKey)}
                       className="w-7 h-7 rounded-lg bg-[#090A0F] border border-[#1F2430] hover:border-neutral-500 flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
                     >
                       <Plus className="w-3 h-3" />
@@ -450,6 +483,40 @@ export const HostDashboard: React.FC = () => {
                     type="button"
                     onClick={() => handleAdjustActionTime(1)}
                     className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-neutral-500 flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Sheriff Bullets Count */}
+              <div className="p-3 rounded-xl bg-[#090A0F] border border-[#1F2430] flex items-center justify-between gap-3 sm:col-span-2">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-[#F8FAFC] flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-blue-400" /> Sheriff Bullets
+                  </span>
+                  <p className="text-[10px] text-[#94A3B8]">Total silver bullets loaded for Sheriff</p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustSheriffBullets(-1)}
+                    disabled={(currentRoomSettings.sheriff_bullets || 1) <= 1}
+                    className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+
+                  <span className="w-10 text-center font-mono font-bold text-xs text-blue-400">
+                    {currentRoomSettings.sheriff_bullets || 1}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustSheriffBullets(1)}
+                    disabled={(currentRoomSettings.sheriff_bullets || 1) >= 5}
+                    className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                   </button>

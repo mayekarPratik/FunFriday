@@ -1,0 +1,10 @@
+{
+  "id": "sheriff",
+  "name": "Sheriff",
+  "team": "good",
+  "color_theme": "bg-blue-600",
+  "description": "You hold a single silver bullet. You can wake up at night to shoot one player per game. Choose wisely, or you might kill an innocent.",
+  "action_type": "select_one_player",
+  "is_passive_at_night": false,
+  "night_priority": 5
+}

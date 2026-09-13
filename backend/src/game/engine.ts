@@ -169,6 +169,10 @@ export function resolveDaybreak(state: GameState): void {
     witchAction?.poison_target ||
     (witchAction?.action_type === 'poison' ? witchAction?.target_socket_id : undefined);
 
+  const sheriffKillTargetId: string | undefined =
+    actions.sheriff_kill ||
+    actions['sheriff']?.target_socket_id;
+
   // Queue the wolf_kill victim
   let queuedWolfVictim: string | null = wolfKillVictimId || null;
 
@@ -182,10 +186,19 @@ export function resolveDaybreak(state: GameState): void {
     queuedWolfVictim = null;
   }
 
+  // Queue the sheriff_kill victim (protected by doctor_save)
+  let queuedSheriffVictim: string | null = sheriffKillTargetId || null;
+  if (queuedSheriffVictim && doctorSaveTargetId && queuedSheriffVictim === doctorSaveTargetId) {
+    queuedSheriffVictim = null;
+  }
+
   // If witch_poison exists, add that target to the final kill list
   const finalKillList: string[] = [];
   if (queuedWolfVictim) {
     finalKillList.push(queuedWolfVictim);
+  }
+  if (queuedSheriffVictim && !finalKillList.includes(queuedSheriffVictim)) {
+    finalKillList.push(queuedSheriffVictim);
   }
   if (witchPoisonTargetId && !finalKillList.includes(witchPoisonTargetId)) {
     finalKillList.push(witchPoisonTargetId);
@@ -386,6 +399,7 @@ export function sanitizeStateForPlayer(state: GameState, playerId: string): Game
   const myRole = player?.role || 'villager';
   const isWitch = myRole === 'witch';
   const isExecutioner = myRole === 'executioner';
+  const isSheriff = myRole === 'sheriff';
 
   const wolfKill =
     state.night_actions?.wolf_kill ||
@@ -404,12 +418,13 @@ export function sanitizeStateForPlayer(state: GameState, playerId: string): Game
     night_queue: [], // Redacted for players
     // Witch receives wolf_kill when acting
     night_actions: isWitch && wolfKill ? { wolf_kill: wolfKill } : {},
-    // Witch receives potion state, Executioner receives target_id
+    // Witch receives potion state, Executioner receives target_id, Sheriff receives bullet state
     role_states: {
       ...(isWitch && state.role_states?.witch ? { witch: state.role_states.witch } : {}),
       ...(isExecutioner && executionerTargetId
         ? { executioner: { target_id: executionerTargetId } }
-        : {})
+        : {}),
+      ...(isSheriff && state.role_states?.sheriff ? { sheriff: state.role_states.sheriff } : {})
     },
     role_settings: state.role_settings,
     settings: state.settings,
@@ -570,6 +585,22 @@ export async function handleNightAction(
     if (doctorTarget) {
       state.night_actions.doctor_save = doctorTarget;
     }
+  } else if (role === 'sheriff') {
+    if (!state.role_states) {
+      state.role_states = {};
+    }
+    if (!state.role_states.sheriff) {
+      state.role_states.sheriff = { bullet_count: state.settings?.sheriff_bullets ?? 1 };
+    }
+
+    const sheriffTarget = payload.target_socket_id || payload.sheriff_kill;
+    const currentBullets = state.role_states.sheriff.bullet_count ?? (state.role_states.sheriff.has_bullet ? 1 : 0);
+    if (sheriffTarget && currentBullets > 0) {
+      state.night_actions.sheriff_kill = sheriffTarget;
+      state.role_states.sheriff.bullet_count = currentBullets - 1;
+      state.role_states.sheriff.has_bullet = state.role_states.sheriff.bullet_count > 0;
+    }
+    state.night_actions['sheriff'] = payload;
   } else {
     state.night_actions[role] = payload;
   }
@@ -641,7 +672,7 @@ export async function resetGameState(roomCode: string): Promise<GameState> {
   state.winner = null;
   state.seer_result = null;
   state.executioner_target = null;
-  state.settings = state.settings || { discussion_time_seconds: 300, action_time_seconds: 6 };
+  state.settings = state.settings || { discussion_time_seconds: 300, action_time_seconds: 6, sheriff_bullets: 1 };
 
   // Reset players: keep socket_id, name, and identity, but reset role to default/null and is_alive: true
   state.players = state.players.map((p) => ({
