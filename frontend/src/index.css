@@ -165,4 +165,27 @@
   animation: moonBreathe 4s ease-in-out infinite;
 }
 
+/* CRT TV Turn Off / Turn On Cinematic Keyframes */
+@keyframes crtOff {
+  0% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
+  40% { transform: scale(1, 0.01); opacity: 1; filter: brightness(3); }
+  70% { transform: scale(0.01, 0.01); opacity: 1; }
+  100% { transform: scale(0, 0); opacity: 0; }
+}
+
+@keyframes crtOn {
+  0% { transform: scale(0, 0); opacity: 0; filter: brightness(3); }
+  30% { transform: scale(0.01, 0.01); opacity: 1; }
+  60% { transform: scale(1, 0.01); opacity: 1; filter: brightness(3); }
+  100% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
+}
+
+.animate-crt-off {
+  animation: crtOff 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-crt-on {
+  animation: crtOn 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
 

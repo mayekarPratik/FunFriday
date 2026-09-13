@@ -234,11 +234,8 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
       return { success: false, error: errorMsg };
     }
 
-    // Immediately set local currentGameId so UI transitions without lag
-    set({ currentGameId: gameId });
-
     return new Promise((resolve) => {
-      // Emit select_game / start_game with gameId payload
+      // Emit select_game with gameId payload
       socket.emit('select_game', { room_code: roomCode, gameId }, (response: any) => {
         if (response && response.error) {
           set({ lastActionError: response.error });

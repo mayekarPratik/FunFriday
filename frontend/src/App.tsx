@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { useCoreStore } from './store/coreStore';
 import { LandingPage } from './hub/LandingPage';
 import { HubLobbyHost } from './hub/HubLobbyHost';
@@ -12,25 +12,69 @@ const WerewolfMaster = lazy(() => import('./games/werewolf/WerewolfMaster'));
 
 export const App: React.FC = () => {
   const {
+    socket,
     isConnected,
     isConnecting,
     connectionError,
     roomCode,
     activeRoleMode,
     currentGameId,
+    setCurrentGameId,
     lastActionError,
     initSocket,
     clearErrors
   } = useCoreStore();
 
+  const [tvState, setTvState] = useState<'idle' | 'turning_off' | 'turning_on'>('idle');
+  const [pendingGameId, setPendingGameId] = useState<string | null>(null);
+
+  const offTimeoutRef = useRef<number | null>(null);
+  const onTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
     initSocket();
   }, [initSocket]);
 
+  // Intercept socket event for game_selected with 600ms CRT Off / On cinematic sequence
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleGameSelected = (data: { gameId: string; game_id?: string }) => {
+      const selectedId = data?.gameId || data?.game_id;
+      if (!selectedId) return;
+
+      // Clear any prior transition timers
+      if (offTimeoutRef.current) clearTimeout(offTimeoutRef.current);
+      if (onTimeoutRef.current) clearTimeout(onTimeoutRef.current);
+
+      setPendingGameId(selectedId);
+      setTvState('turning_off');
+
+      // 1. After 600ms (matching crtOff duration), update currentGameId in Zustand & trigger crtOn
+      offTimeoutRef.current = setTimeout(() => {
+        setCurrentGameId(selectedId);
+        setTvState('turning_on');
+        setPendingGameId(null);
+
+        // 2. After another 600ms (matching crtOn duration), reset to idle
+        onTimeoutRef.current = setTimeout(() => {
+          setTvState('idle');
+        }, 600);
+      }, 600);
+    };
+
+    socket.on('game_selected', handleGameSelected);
+    return () => {
+      socket.off('game_selected', handleGameSelected);
+      if (offTimeoutRef.current) clearTimeout(offTimeoutRef.current);
+      if (onTimeoutRef.current) clearTimeout(onTimeoutRef.current);
+    };
+  }, [socket, setCurrentGameId]);
+
   const hasRoomCode = Boolean(roomCode);
   const isHost = activeRoleMode === 'host';
 
-  const renderContent = () => {
+  const renderRouterOutlet = () => {
     // 1. If no room joined or created, render the Landing Page
     if (!hasRoomCode) {
       return <LandingPage />;
@@ -64,7 +108,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen text-[#F8FAFC] flex flex-col justify-between selection:bg-[#3B82F6]/30 relative z-0">
+    <div className="min-h-screen w-full bg-black overflow-hidden text-[#F8FAFC] flex flex-col justify-between selection:bg-[#3B82F6]/30 relative z-0">
       {/* Global Interactive Canvas Starfield */}
       <InteractiveBackground isLandingPage={!hasRoomCode} />
 
@@ -83,7 +127,7 @@ export const App: React.FC = () => {
                 FunFriday
               </span>
               <span className="text-[10px] font-mono text-[#94A3B8] -mt-1">
-                {currentGameId ? `${currentGameId.toUpperCase()} MODE` : 'GAME HUB'}
+                {currentGameId ? `${currentGameId.toUpperCase()} MODE` : pendingGameId ? `${pendingGameId.toUpperCase()} LOADING...` : 'GAME HUB'}
               </span>
             </div>
           </div>
@@ -114,7 +158,7 @@ export const App: React.FC = () => {
       )}
 
       {/* Main Container */}
-      <main className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 my-auto">
+      <main className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 my-auto w-full">
         <div className="w-full max-w-5xl flex flex-col items-center">
           {/* Error Banner */}
           {(connectionError || lastActionError) && (
@@ -129,14 +173,24 @@ export const App: React.FC = () => {
                   }}
                   className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#EF4444]/20 hover:bg-[#EF4444]/30 font-medium transition cursor-pointer"
                 >
-                  <RefreshCw className="w-3 h-3" /> Dismiss & Retry
+                  <RefreshCw className="w-3.5 h-3.5" /> Dismiss & Retry
                 </button>
               </div>
             </div>
           )}
 
-          {/* Dynamic Router Content */}
-          {renderContent()}
+          {/* Dynamic Router Outlet wrapped in CRT TV animated container */}
+          <div
+            className={`w-full h-full origin-center ${
+              tvState === 'turning_off'
+                ? 'animate-crt-off'
+                : tvState === 'turning_on'
+                ? 'animate-crt-on'
+                : ''
+            }`}
+          >
+            {renderRouterOutlet()}
+          </div>
         </div>
       </main>
 
@@ -151,3 +205,4 @@ export const App: React.FC = () => {
 };
 
 export default App;
+
