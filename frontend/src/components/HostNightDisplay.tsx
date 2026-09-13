@@ -1,130 +1,172 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { Moon, Skull, Eye, HeartPulse, ChevronRight, Users, ShieldAlert } from 'lucide-react';
+import { Moon, Sun, Skull, Flame, ChevronRight } from 'lucide-react';
+
+export const NIGHT_ATMOSPHERE_TEXT: Record<string, string> = {
+  wolf: 'The Werewolves are on the hunt...',
+  doctor: 'The Doctor is making their rounds...',
+  seer: 'The Seer is peering into the future...',
+  witch: 'The Witch is brewing potions...',
+  cupid: 'Cupid is aiming their arrows...',
+  serial_killer: 'A shadowy figure stalks the alleys...',
+  villager: 'The town is sleeping...',
+  jester: 'The town is sleeping...',
+  executioner: 'The town is sleeping...'
+};
 
 export const HostNightDisplay: React.FC = () => {
-  const { gameState, advanceNightPriority } = useGameStore();
+  const { gameState, hostAdvancePhase, activeRoleMode } = useGameStore();
 
   if (!gameState) return null;
 
-  const currentPriority = gameState.active_role_priority;
+  const isHost = activeRoleMode === 'host';
+  const phase = gameState.phase;
 
-  const priorityLabels: Record<number, { title: string; desc: string; icon: any; color: string }> = {
-    1: {
-      title: 'Werewolves Wake Up',
-      desc: 'The wolves are selecting a victim in secret.',
-      icon: Skull,
-      color: 'text-red-500'
-    },
-    2: {
-      title: 'Doctor Wakes Up',
-      desc: 'The doctor is deciding whom to protect tonight.',
-      icon: HeartPulse,
-      color: 'text-emerald-400'
-    },
-    3: {
-      title: 'Seer Wakes Up',
-      desc: 'The seer is inspecting a suspect alignment.',
-      icon: Eye,
-      color: 'text-blue-400'
-    },
-    0: {
-      title: 'The Village Sleeps',
-      desc: 'Night phase completing...',
-      icon: Moon,
-      color: 'text-neutral-400'
-    }
-  };
+  // 1. Morning Recap Phase
+  if (phase === 'morning_recap') {
+    const recentDeaths = gameState.recent_deaths || [];
+    const hasDeaths = recentDeaths.length > 0;
 
-  const currentStage = priorityLabels[currentPriority] || priorityLabels[0];
-  const StageIcon = currentStage.icon;
-
-  return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center gap-8 py-8">
-      {/* Night Atmosphere Card */}
-      <div className="wope-card p-10 sm:p-14 w-full flex flex-col items-center relative overflow-hidden shadow-2xl">
-        {/* Glow backdrop */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-950/20 blur-3xl rounded-full pointer-events-none" />
-
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-neutral-400 text-xs font-mono uppercase mb-6">
-          <Moon className="w-3.5 h-3.5 text-blue-400" /> Night Phase • Stage {currentPriority} / 3
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-between p-8 sm:p-12 z-50 select-none">
+        {/* Top Header Badge */}
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-950/40 border border-amber-900/60 text-amber-400 text-xs font-mono uppercase tracking-widest mt-4">
+          <Sun className="w-3.5 h-3.5 text-amber-400" />
+          <span>Dawn Recap</span>
         </div>
 
-        {/* Large Stage Icon */}
-        <div className="w-24 h-24 rounded-3xl bg-[#191C28] border border-[#1F2430] flex items-center justify-center mb-6 shadow-2xl">
-          <StageIcon className={`w-12 h-12 ${currentStage.color} animate-pulse`} />
+        {/* Center Content */}
+        <div className="max-w-4xl text-center px-4 space-y-6 my-auto">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif text-gray-200 tracking-wide font-light">
+            The sun rises...
+          </h1>
+
+          {!hasDeaths ? (
+            <p className="text-2xl sm:text-3xl md:text-4xl font-serif text-blue-500 tracking-wide font-light animate-pulse">
+              ...and the town survived the night peacefully.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-xl sm:text-2xl md:text-3xl font-serif text-gray-300 font-light">
+                ...but not for everyone. We found these bodies:
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+                {recentDeaths.map((victimName, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-950/40 border border-red-900/70 shadow-lg shadow-red-950/50"
+                  >
+                    <Skull className="w-6 h-6 text-red-600 animate-pulse shrink-0" />
+                    <span className="text-xl sm:text-2xl md:text-3xl font-bold font-mono text-red-600 tracking-wider">
+                      {victimName}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#F8FAFC] mb-2">
-          {currentStage.title}
-        </h1>
-        <p className="text-sm sm:text-base text-[#94A3B8] max-w-lg mb-8">
-          {currentStage.desc} Players are looking down at their private controllers.
-        </p>
-
-        {/* Host Control Bar to cycle roles */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-6 border-t border-[#1F2430] w-full">
-          <button
-            onClick={() => advanceNightPriority(1)}
-            className={`px-4 py-2 rounded-lg text-xs font-mono font-semibold transition cursor-pointer border ${
-              currentPriority === 1
-                ? 'bg-red-950/50 border-red-500 text-red-400 shadow-md'
-                : 'bg-[#090A0F] border-[#1F2430] text-[#94A3B8] hover:text-white'
-            }`}
-          >
-            1. Werewolves
-          </button>
-
-          <button
-            onClick={() => advanceNightPriority(2)}
-            className={`px-4 py-2 rounded-lg text-xs font-mono font-semibold transition cursor-pointer border ${
-              currentPriority === 2
-                ? 'bg-emerald-950/50 border-emerald-500 text-emerald-400 shadow-md'
-                : 'bg-[#090A0F] border-[#1F2430] text-[#94A3B8] hover:text-white'
-            }`}
-          >
-            2. Doctor
-          </button>
-
-          <button
-            onClick={() => advanceNightPriority(3)}
-            className={`px-4 py-2 rounded-lg text-xs font-mono font-semibold transition cursor-pointer border ${
-              currentPriority === 3
-                ? 'bg-blue-950/50 border-blue-500 text-blue-400 shadow-md'
-                : 'bg-[#090A0F] border-[#1F2430] text-[#94A3B8] hover:text-white'
-            }`}
-          >
-            3. Seer
-          </button>
-
-          <button
-            onClick={() => advanceNightPriority()}
-            className="wope-btn-secondary px-3.5 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer ml-2 text-neutral-300"
-          >
-            <span>Next Stage</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            onClick={() => useGameStore.getState().resolveNightToDay()}
-            className="wope-btn-primary px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-[#3B82F6]/25"
-          >
-            <span>Awaken Town (Start Day)</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+        {/* Host Control Button */}
+        <div className="flex flex-col items-center gap-2 mb-4">
+          {isHost && (
+            <button
+              onClick={hostAdvancePhase}
+              className="px-8 py-3.5 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold text-sm tracking-wider uppercase flex items-center gap-2 shadow-xl shadow-blue-500/20 transition-all hover:scale-105 cursor-pointer"
+            >
+              <span>Continue</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+          <span className="text-neutral-600 text-xs font-mono tracking-widest uppercase">
+            Host TV Display
+          </span>
         </div>
       </div>
+    );
+  }
 
-      {/* Village status summary */}
-      <div className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[#12141C] border border-[#1F2430] text-xs font-mono text-[#94A3B8]">
-        <span className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-[#3B82F6]" />
-          {gameState.players.length} Total Players Alive
-        </span>
-        <span className="flex items-center gap-1.5 text-neutral-400">
-          <ShieldAlert className="w-3.5 h-3.5" /> Host Screen (Public / Safe)
-        </span>
+  // 2. Dusk Recap Phase
+  if (phase === 'dusk_recap') {
+    const executedName =
+      gameState.recent_deaths && gameState.recent_deaths.length > 0
+        ? gameState.recent_deaths[0]
+        : gameState.last_day_eliminated;
+
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-between p-8 sm:p-12 z-50 select-none">
+        {/* Top Header Badge */}
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-950/40 border border-purple-900/60 text-purple-400 text-xs font-mono uppercase tracking-widest mt-4">
+          <Flame className="w-3.5 h-3.5 text-purple-400" />
+          <span>Dusk Recap</span>
+        </div>
+
+        {/* Center Content */}
+        <div className="max-w-4xl text-center px-4 space-y-6 my-auto">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif text-gray-200 tracking-wide font-light">
+            The town has spoken.
+          </h1>
+
+          {executedName ? (
+            <div className="p-6 rounded-2xl bg-red-950/30 border border-red-900/50 inline-block shadow-2xl">
+              <p className="text-2xl sm:text-3xl md:text-4xl font-serif text-gray-300 font-light">
+                <span className="text-red-500 font-bold font-mono">{executedName}</span> was executed by the mob.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xl sm:text-2xl md:text-3xl font-serif text-gray-400 font-light">
+              The votes were split or skipped. No one was executed today.
+            </p>
+          )}
+        </div>
+
+        {/* Host Control Button */}
+        <div className="flex flex-col items-center gap-2 mb-4">
+          {isHost && (
+            <button
+              onClick={hostAdvancePhase}
+              className="px-8 py-3.5 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold text-sm tracking-wider uppercase flex items-center gap-2 shadow-xl shadow-blue-500/20 transition-all hover:scale-105 cursor-pointer"
+            >
+              <span>Continue</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+          <span className="text-neutral-600 text-xs font-mono tracking-widest uppercase">
+            Host TV Display
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Night Phase Atmosphere
+  const activeRole = gameState.active_role;
+  const displayText =
+    activeRole && NIGHT_ATMOSPHERE_TEXT[activeRole]
+      ? NIGHT_ATMOSPHERE_TEXT[activeRole]
+      : 'Dawn is approaching...';
+
+  return (
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 z-50 select-none">
+      {/* Subtle top indicator */}
+      <div className="absolute top-8 flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-900/60 border border-neutral-800 text-neutral-500 text-xs font-mono uppercase tracking-widest">
+        <Moon className="w-3.5 h-3.5 text-indigo-400" />
+        <span>Night Phase</span>
+      </div>
+
+      {/* Atmospheric text display */}
+      <div className="max-w-4xl text-center px-4">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif text-gray-300 animate-pulse tracking-wide leading-relaxed font-light">
+          {displayText}
+        </h1>
+      </div>
+
+      {/* Subtle bottom info */}
+      <div className="absolute bottom-8 text-neutral-600 text-xs font-mono tracking-widest uppercase">
+        Host TV Display
       </div>
     </div>
   );
 };
+
+

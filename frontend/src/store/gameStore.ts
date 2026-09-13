@@ -37,10 +37,12 @@ interface GameStore {
   startGame: () => Promise<StartGameResponse>;
   updateRoleSettings: (settings: RoleSettings) => void;
   submitNightAction: (payloadOrTarget: string | { target_socket_id?: string; heal_target?: string | null; poison_target?: string | null; [key: string]: any }) => void;
+  investigatePlayer: (targetSocketId: string) => Promise<{ success: boolean; is_wolf?: boolean; error?: string }>;
   advanceNightPriority: (priority?: number) => void;
   resolveNightToDay: () => void;
   submitVote: (targetSocketId: string) => void;
   tallyDayVotes: () => void;
+  hostAdvancePhase: () => void;
   leaveRoom: () => void;
   clearErrors: () => void;
   disconnectSocket: () => void;
@@ -244,6 +246,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
+  investigatePlayer: async (targetSocketId: string): Promise<{ success: boolean; is_wolf?: boolean; error?: string }> => {
+    const { socket, gameState } = get();
+    if (!socket || !gameState) {
+      return { success: false, error: 'Socket not connected' };
+    }
+    return new Promise((resolve) => {
+      socket.emit(
+        'investigate_player',
+        { room_code: gameState.room_code, target_socket_id: targetSocketId },
+        (response: { success: boolean; is_wolf?: boolean; error?: string }) => {
+          if (response?.success) {
+            resolve(response);
+          } else {
+            resolve({ success: false, error: response?.error || 'Investigation failed' });
+          }
+        }
+      );
+    });
+  },
+
   advanceNightPriority: (priority?: number) => {
     const { socket, gameState } = get();
     if (socket && gameState) {
@@ -272,6 +294,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { socket, gameState } = get();
     if (socket && gameState) {
       socket.emit('tally_day_votes', { room_code: gameState.room_code });
+    }
+  },
+
+  hostAdvancePhase: () => {
+    const { socket, gameState } = get();
+    if (socket && gameState) {
+      socket.emit('host_advance_phase', { room_code: gameState.room_code });
     }
   },
 

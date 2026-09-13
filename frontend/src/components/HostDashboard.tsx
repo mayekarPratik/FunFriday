@@ -388,31 +388,58 @@ export const HostDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5 max-h-[500px] overflow-y-auto pr-1">
               {gameState.players.map((player, index) => {
                 const isHostSocket = player.socket_id === gameState.host_socket_id;
+                const isAlive = player.is_alive;
+
                 return (
                   <div
                     key={player.socket_id}
-                    className="p-3 rounded-xl bg-[#12141C] border border-[#1F2430] flex items-center justify-between gap-3 animate-fadeIn"
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 animate-fadeIn ${
+                      isAlive
+                        ? 'bg-[#12141C] border-[#1F2430]'
+                        : 'bg-black/50 border-neutral-900 opacity-60'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#1E293B] to-[#334155] border border-[#1F2430] flex items-center justify-center font-bold text-xs text-[#F8FAFC] shadow-sm shrink-0">
-                        {player.name.charAt(0).toUpperCase()}
+                      <div
+                        className={`w-9 h-9 rounded-full border flex items-center justify-center font-bold text-xs shadow-sm shrink-0 ${
+                          isAlive
+                            ? 'bg-gradient-to-tr from-[#1E293B] to-[#334155] border-[#1F2430] text-[#F8FAFC]'
+                            : 'bg-neutral-950 border-neutral-900 text-neutral-600'
+                        }`}
+                      >
+                        {isAlive ? (
+                          player.name.charAt(0).toUpperCase()
+                        ) : (
+                          <Skull className="w-4 h-4 text-red-700" />
+                        )}
                       </div>
 
                       <div className="min-w-0">
-                        <p className="font-bold text-sm text-[#F8FAFC] truncate">
+                        <p
+                          className={`font-bold text-sm truncate ${
+                            isAlive ? 'text-[#F8FAFC]' : 'line-through text-gray-700'
+                          }`}
+                        >
                           {player.name}
                         </p>
                         <p className="text-[10px] font-mono text-[#94A3B8]">
-                          Player #{index + 1}
+                          {isAlive ? `Player #${index + 1}` : 'Eliminated (💀 Dead)'}
                         </p>
                       </div>
                     </div>
 
-                    {isHostSocket && (
-                      <span className="wope-badge bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/30 flex items-center gap-1 text-[10px] shrink-0">
-                        <Crown className="w-3 h-3" /> Host
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {!isAlive && (
+                        <span className="wope-badge bg-red-950/40 text-red-700 border-red-900/50 flex items-center gap-1 text-[10px]">
+                          💀 Dead
+                        </span>
+                      )}
+                      {isHostSocket && (
+                        <span className="wope-badge bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/30 flex items-center gap-1 text-[10px]">
+                          <Crown className="w-3 h-3" /> Host
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}

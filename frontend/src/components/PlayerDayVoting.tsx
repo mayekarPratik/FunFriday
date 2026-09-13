@@ -5,8 +5,46 @@ import { Sun, Vote, Skull, CheckCircle2, Sparkles } from 'lucide-react';
 export const PlayerDayVoting: React.FC = () => {
   const { gameState, getMyPlayer, submitVote } = useGameStore();
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const [timeLeftMs, setTimeLeftMs] = useState<number>(300000);
 
   const me = getMyPlayer();
+
+  // If eliminated, render Spectator Mode
+  if (me && !me.is_alive) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 z-50 select-none text-center">
+        <div className="w-20 h-20 rounded-3xl bg-red-950/40 border border-red-800/60 flex items-center justify-center text-red-600 mb-6 shadow-2xl shadow-red-950/80 animate-pulse">
+          <Skull className="w-10 h-10" />
+        </div>
+        <div className="max-w-md space-y-4">
+          <span className="px-3.5 py-1 rounded-full bg-red-950/50 border border-red-900/60 text-red-500 font-mono text-xs uppercase tracking-widest">
+            Spectator Mode
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-serif text-gray-200 tracking-wide font-light leading-snug">
+            You have been eliminated.
+          </h1>
+          <p className="text-sm sm:text-base text-gray-400 font-serif leading-relaxed">
+            Do not speak. Watch the rest of the game unfold.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Perfect 100% sync timer using absolute timestamp day_ends_at
+  React.useEffect(() => {
+    const endTimestamp = gameState?.day_ends_at || gameState?.timer_ends_at;
+    if (!endTimestamp) return;
+
+    const updateTimer = () => {
+      const remaining = Math.max(0, endTimestamp - Date.now());
+      setTimeLeftMs(remaining);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 500);
+    return () => clearInterval(interval);
+  }, [gameState?.day_ends_at, gameState?.timer_ends_at]);
 
   if (!gameState || !me) {
     return (
@@ -23,11 +61,15 @@ export const PlayerDayVoting: React.FC = () => {
   const otherLivingPlayers = livingPlayers.filter((p) => p.socket_id !== me.socket_id);
 
   const isExecutioner = me.role === 'executioner';
-  const executionerTargetId = gameState.role_states?.executioner?.target_id;
+  const executionerTargetId = gameState.executioner_target || gameState.role_states?.executioner?.target_id;
   const targetPlayer = executionerTargetId
     ? gameState.players.find((p) => p.socket_id === executionerTargetId)
     : null;
   const targetName = targetPlayer ? targetPlayer.name : 'Unknown';
+
+  const minutes = Math.floor(timeLeftMs / 60000);
+  const seconds = Math.floor((timeLeftMs % 60000) / 1000);
+  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   const handleVote = (targetSocketId: string) => {
     if (!isAlive) return;
@@ -54,7 +96,7 @@ export const PlayerDayVoting: React.FC = () => {
           </div>
           <div>
             <span className="text-[10px] uppercase font-mono tracking-wider text-amber-400 font-semibold block">
-              Day Phase Trial
+              Day Phase Trial • {formattedTime}
             </span>
             <h2 className="text-base font-bold text-[#F8FAFC]">Cast Your Vote</h2>
           </div>
@@ -81,9 +123,9 @@ export const PlayerDayVoting: React.FC = () => {
             <Skull className="w-8 h-8" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-bold text-white">You are Spectating</h3>
+            <h3 className="text-lg font-bold text-white">You are dead</h3>
             <p className="text-xs text-[#94A3B8] max-w-xs mx-auto">
-              You were eliminated. You can watch the trial unfold on the TV, but cannot vote or speak during trials.
+              Watch the chaos unfold. You cannot vote or participate in trials.
             </p>
           </div>
         </div>

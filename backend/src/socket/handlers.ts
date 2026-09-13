@@ -331,7 +331,11 @@ export function registerSocketHandlers(io: Server): void {
         if (!state) throw new Error('Room not found');
 
         const player = state.players.find((p) => p.socket_id === socket.id);
-        if (!player || !player.is_alive) throw new Error('Player not eligible or alive');
+        if (!player || !player.is_alive) {
+          console.warn(`[NightAction Ignored] Dead or non-existent player ${socket.id} attempted action`);
+          if (typeof callback === 'function') callback({ success: false, error: 'Eliminated players cannot perform night actions' });
+          return;
+        }
 
         const playerRole = player.role || 'villager';
         const actionPayload: NightActionPayload = {
@@ -355,6 +359,107 @@ export function registerSocketHandlers(io: Server): void {
 
     socket.on('submit_action', onNightAction);
     socket.on('night_action', onNightAction);
+
+    /**
+     * Handler for 'investigate_player' (Seer)
+     * Verifies that the sender is the living Seer, and returns the investigation result
+     * ONLY to this specific socket via callback or socket.emit('seer_result').
+     */
+    socket.on('investigate_player', async (payload: { room_code?: string; target_socket_id: string }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+        if (!roomCode) throw new Error('Room code not found');
+
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error('Room not found');
+
+        const seer = state.players.find((p) => p.socket_id === socket.id);
+        if (!seer || !seer.is_alive || seer.role !== 'seer') {
+          throw new Error('Only the living Seer can investigate players');
+        }
+
+        const target = state.players.find((p) => p.socket_id === payload.target_socket_id);
+        if (!target) {
+          throw new Error('Target player not found');
+        }
+
+        const isWolf = target.role === 'wolf';
+        const result = {
+          success: true,
+          target_socket_id: target.socket_id,
+          target_name: target.name,
+          is_wolf: isWolf
+        };
+
+        // Send private result only to this Seer socket
+        socket.emit('seer_result', result);
+
+        if (typeof callback === 'function') {
+          callback(result);
+        }
+      } catch (error: any) {
+        console.error('[investigate_player error]:', error.message);
+        if (typeof callback === 'function') {
+          callback({ success: false, error: error.message });
+        }
+      }
+    });
+
+    /**
+     * Handler for 'host_advance_phase'
+     * When triggered by the Host:
+     * - If current phase is 'morning_recap', shift to 'day' (and start the 5-min timer).
+     * - If current phase is 'dusk_recap', shift to 'night' (and generate the night queue).
+     */
+    socket.on('host_advance_phase', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+        if (!roomCode) throw new Error('Room code required');
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error('Room not found');
+
+        if (state.host_socket_id !== socket.id) {
+          throw new Error('Only the Host can advance recap phases');
+        }
+
+        if (state.phase === 'morning_recap') {
+          const dayEndsAt = Date.now() + 5 * 60 * 1000;
+          state.phase = 'day';
+          state.timer_ends_at = dayEndsAt;
+          state.day_ends_at = dayEndsAt;
+          state.recent_deaths = [];
+        } else if (state.phase === 'dusk_recap') {
+          initializeNightPhase(state);
+          state.recent_deaths = [];
+        } else {
+          throw new Error(`Cannot advance phase from '${state.phase}' with host_advance_phase`);
+        }
+
+        await saveGameState(state, ROOM_TTL_SECONDS);
+        broadcastGameState(io, state);
+
+        if (typeof callback === 'function') callback({ success: true, state });
+      } catch (error: any) {
+        console.error('[host_advance_phase error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
+      }
+    });
 
     /**
      * Handler for 'resolve_night_to_day'
@@ -419,7 +524,9 @@ export function registerSocketHandlers(io: Server): void {
 
         const voter = state.players.find((p) => p.socket_id === socket.id);
         if (!voter || !voter.is_alive) {
-          throw new Error('Dead players cannot vote');
+          console.warn(`[Vote Ignored] Dead or non-existent player ${socket.id} attempted to vote`);
+          if (typeof callback === 'function') callback({ success: false, error: 'Eliminated players cannot vote' });
+          return;
         }
 
         if (!state.votes) state.votes = {};

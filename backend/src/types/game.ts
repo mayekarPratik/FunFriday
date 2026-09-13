@@ -1,4 +1,4 @@
-export type GamePhase = 'lobby' | 'night' | 'day' | 'game_over';
+export type GamePhase = 'lobby' | 'night' | 'day' | 'game_over' | 'morning_recap' | 'dusk_recap';
 
 export type RoleType =
   | 'cupid'
@@ -9,19 +9,31 @@ export type RoleType =
   | 'villager'
   | 'jester'
   | 'executioner'
+  | 'serial_killer'
   | '';
 
-export const MASTER_NIGHT_ORDER: RoleType[] = ['cupid', 'doctor', 'wolf', 'witch', 'seer'];
+export const MASTER_NIGHT_ORDER: RoleType[] = [
+  'cupid',
+  'wolf',
+  'doctor',
+  'witch',
+  'seer',
+  'serial_killer',
+  'executioner',
+  'jester',
+  'villager'
+];
 
 export const ROLE_PRIORITIES: Record<string, number> = {
   cupid: 1,
-  doctor: 2,
-  wolf: 3,
+  wolf: 2,
+  doctor: 3,
   witch: 4,
   seer: 5,
-  villager: 0,
-  jester: 0,
-  executioner: 0,
+  serial_killer: 6,
+  executioner: 7,
+  jester: 8,
+  villager: 9,
   '': 0
 };
 
@@ -95,11 +107,15 @@ export interface GameState {
   role_settings?: RoleSettings;
   players: Player[];
   lovers?: string[]; // socket IDs of linked lovers
+  recent_deaths?: string[];
   last_night_killed?: string | null;
   last_day_eliminated?: string | null;
   votes?: Record<string, string>; // voter_socket_id -> target_socket_id
   timer_ends_at?: number | null;
+  day_ends_at?: number | null; // Absolute UTC timestamp for Day phase sync
   winner?: WinnerType;
+  seer_result?: { target_socket_id: string; is_wolf: boolean; target_name?: string } | null;
+  executioner_target?: string | null;
 }
 
 export interface CreateRoomResponse {

@@ -4,11 +4,11 @@ import { HostEntry } from './components/HostEntry';
 import { PlayerEntry } from './components/PlayerEntry';
 import { HostDashboard } from './components/HostDashboard';
 import { PlayerWaiting } from './components/PlayerWaiting';
-import { NightPhase } from './components/NightPhase';
 import { HostNightDisplay } from './components/HostNightDisplay';
 import { HostDayDisplay } from './components/HostDayDisplay';
 import { PlayerDayVoting } from './components/PlayerDayVoting';
 import { GameOverDisplay } from './components/GameOverDisplay';
+import { PlayerView } from './views/PlayerView';
 import { Wifi, WifiOff, RefreshCw, AlertCircle, Shield, Tv, Smartphone } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -31,9 +31,9 @@ export const App: React.FC = () => {
 
   const isHost = activeRoleMode === 'host';
 
-  // If player is in night phase, show OLED pitch black NightPhase view
-  if (gameState && gameState.phase === 'night' && !isHost) {
-    return <NightPhase />;
+  // If in active game and not host, delegate all player rendering (including dead spectator mode) to PlayerView
+  if (gameState && !isHost && gameState.phase !== 'game_over') {
+    return <PlayerView />;
   }
 
   return (
@@ -125,7 +125,7 @@ export const App: React.FC = () => {
           {gameState ? (
             gameState.phase === 'game_over' ? (
               <GameOverDisplay />
-            ) : gameState.phase === 'night' ? (
+            ) : gameState.phase === 'night' || gameState.phase === 'morning_recap' || gameState.phase === 'dusk_recap' ? (
               <HostNightDisplay />
             ) : gameState.phase === 'day' ? (
               isHost ? (
