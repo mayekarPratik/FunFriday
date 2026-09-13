@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { useCoreStore } from './store/coreStore';
-import { LandingPage } from './hub/LandingPage';
-import { HubLobbyHost } from './hub/HubLobbyHost';
-import { HubLobbyPlayer } from './hub/HubLobbyPlayer';
+import { LandingPage } from './lobby/LandingPage';
+import { LobbyHost } from './lobby/LobbyHost';
+import { LobbyClient } from './lobby/LobbyClient';
 import { ServerWakeupModal } from './components/ServerWakeupModal';
 import { InteractiveBackground } from './components/InteractiveBackground';
 import { Wifi, WifiOff, RefreshCw, AlertCircle, Shield } from 'lucide-react';
@@ -80,9 +80,9 @@ export const App: React.FC = () => {
       return <LandingPage />;
     }
 
-    // 2. If in a room, but no game chosen yet, render the Game Hub Lobby
+    // 2. If in a room, but no game chosen yet, render The Lobby Host or Client screen
     if (!currentGameId) {
-      return isHost ? <HubLobbyHost /> : <HubLobbyPlayer />;
+      return isHost ? <LobbyHost /> : <LobbyClient />;
     }
 
     // 3. If Werewolf is chosen, render lazy-loaded WerewolfMaster
@@ -104,7 +104,7 @@ export const App: React.FC = () => {
     }
 
     // Fallback for unrecognized gameId
-    return isHost ? <HubLobbyHost /> : <HubLobbyPlayer />;
+    return isHost ? <LobbyHost /> : <LobbyClient />;
   };
 
   return (
@@ -115,7 +115,7 @@ export const App: React.FC = () => {
       {/* Global Server Wake-Up Overlay for Render.com cold starts */}
       {!isConnected && <ServerWakeupModal />}
 
-      {/* Header bar (Visible in Hub / Games when roomCode exists and not in fullscreen pitch-black screens) */}
+      {/* Header bar (Visible in Lobby / Games when roomCode exists and not in fullscreen pitch-black screens) */}
       {hasRoomCode && (
         <header className="h-16 border-b border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-3">
@@ -124,10 +124,10 @@ export const App: React.FC = () => {
             </div>
             <div className="flex flex-col">
               <span className="font-bold tracking-wider text-sm uppercase text-[#F8FAFC]">
-                FunFriday
+                The Lobby
               </span>
               <span className="text-[10px] font-mono text-[#94A3B8] -mt-1">
-                {currentGameId ? `${currentGameId.toUpperCase()} MODE` : pendingGameId ? `${pendingGameId.toUpperCase()} LOADING...` : 'GAME HUB'}
+                {currentGameId ? `${currentGameId.toUpperCase()} MODE` : pendingGameId ? `${pendingGameId.toUpperCase()} LOADING...` : 'CORE HUB'}
               </span>
             </div>
           </div>
@@ -181,13 +181,12 @@ export const App: React.FC = () => {
 
           {/* Dynamic Router Outlet wrapped in CRT TV animated container */}
           <div
-            className={`w-full h-full origin-center ${
-              tvState === 'turning_off'
+            className={`w-full h-full origin-center ${tvState === 'turning_off'
                 ? 'animate-crt-off'
                 : tvState === 'turning_on'
-                ? 'animate-crt-on'
-                : ''
-            }`}
+                  ? 'animate-crt-on'
+                  : ''
+              }`}
           >
             {renderRouterOutlet()}
           </div>
@@ -197,7 +196,7 @@ export const App: React.FC = () => {
       {/* Footer (only if not landing page since landing page has its own footer) */}
       {hasRoomCode && (
         <footer className="py-4 border-t border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md text-center text-xs text-[#94A3B8]">
-          <span>FunFriday Game Hub • Created by Pratik Mayekar</span>
+          <span>The Lobby • Multiplayer Game Hub</span>
         </footer>
       )}
     </div>

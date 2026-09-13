@@ -74,7 +74,7 @@ const AVAILABLE_GAMES: GameHubCard[] = [
   }
 ];
 
-export const HubLobbyHost: React.FC = () => {
+export const LobbyHost: React.FC = () => {
   const {
     roomCode,
     players,
@@ -120,7 +120,7 @@ export const HubLobbyHost: React.FC = () => {
               </span>
             </div>
             <h1 className="text-2xl font-bold text-white mt-1">
-              Select Game Experience
+              Welcome to The Lobby
             </h1>
           </div>
         </div>
@@ -279,4 +279,4 @@ export const HubLobbyHost: React.FC = () => {
   );
 };
 
-export default HubLobbyHost;
+export default LobbyHost;

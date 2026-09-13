@@ -2,7 +2,7 @@ import React from 'react';
 import { useCoreStore } from '../store/coreStore';
 import { Smartphone, Shield, LogOut, CheckCircle2 } from 'lucide-react';
 
-export const HubLobbyPlayer: React.FC = () => {
+export const LobbyClient: React.FC = () => {
   const { roomCode, myPlayerName, players, leaveRoom } = useCoreStore();
 
   return (
@@ -20,14 +20,14 @@ export const HubLobbyPlayer: React.FC = () => {
 
           <div className="space-y-2 z-10">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] text-xs font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Connected to Hub
+              <CheckCircle2 className="w-3.5 h-3.5" /> Connected to The Lobby
             </div>
 
             <h2 className="text-2xl font-bold text-[#F8FAFC]">
-              Waiting for Host
+              You are in The Lobby
             </h2>
-            <p className="text-xs text-[#94A3B8] max-w-xs mx-auto">
-              Welcome, <span className="font-semibold text-[#F8FAFC]">{myPlayerName}</span>. The host is currently selecting a game mode on the big screen.
+            <p className="text-xs text-[#94A3B8] max-w-xs mx-auto leading-relaxed">
+              Waiting for the Host to select a game, <span className="font-semibold text-[#F8FAFC]">{myPlayerName}</span>...
             </p>
           </div>
 
@@ -73,4 +73,4 @@ export const HubLobbyPlayer: React.FC = () => {
   );
 };
 
-export default HubLobbyPlayer;
+export default LobbyClient;

@@ -140,7 +140,7 @@ export const GameOverDisplay: React.FC = () => {
                 onClick={leaveRoom}
                 className="py-3.5 px-6 rounded-xl bg-[#191C28] hover:bg-[#1F2430] border border-[#1F2430] text-[#94A3B8] hover:text-white font-medium text-sm transition flex items-center gap-2 cursor-pointer"
               >
-                <LogOut className="w-4 h-4" /> Exit to Game Hub
+                <LogOut className="w-4 h-4" /> Exit to The Lobby
               </button>
             </>
           ) : (
@@ -149,7 +149,7 @@ export const GameOverDisplay: React.FC = () => {
               onClick={leaveRoom}
               className="py-3.5 px-8 rounded-xl bg-[#191C28] hover:bg-[#1F2430] border border-[#1F2430] text-[#94A3B8] hover:text-white font-medium text-sm transition flex items-center gap-2 cursor-pointer"
             >
-              <LogOut className="w-4 h-4" /> Exit to Game Hub
+              <LogOut className="w-4 h-4" /> Exit to The Lobby
             </button>
           )}
         </div>

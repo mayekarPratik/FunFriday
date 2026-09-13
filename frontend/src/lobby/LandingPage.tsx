@@ -137,18 +137,18 @@ export const LandingPage: React.FC = () => {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Top Header Logo */}
+      {/* Top Header Logo & Status */}
       <header className="w-full max-w-5xl flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#12141C] border border-[#1F2430] flex items-center justify-center text-[#3B82F6] shadow-lg shadow-[#3B82F6]/5">
             <Shield className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <span className="font-black tracking-widest text-base uppercase bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-              FunFriday
+            <span className="font-['Montserrat'] text-sm font-black tracking-[0.2em] uppercase text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">
+              The Lobby
             </span>
-            <span className="text-[10px] font-mono tracking-wider uppercase text-[#3B82F6] font-semibold -mt-1">
-              Multiplayer Game Hub
+            <span className="font-['Space_Mono'] text-[9px] text-gray-400 tracking-[0.2em] uppercase -mt-0.5">
+              MultiPlayer Game Hub
             </span>
           </div>
         </div>
@@ -156,13 +156,12 @@ export const LandingPage: React.FC = () => {
         {/* Global Connection Pill */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1F2430] bg-[#12141C]/80 backdrop-blur-md text-xs font-mono">
           <span
-            className={`w-2 h-2 rounded-full ${
-              isConnected
-                ? 'bg-[#22C55E] shadow-sm shadow-[#22C55E]/50 animate-pulse'
-                : isConnecting
+            className={`w-2 h-2 rounded-full ${isConnected
+              ? 'bg-[#22C55E] shadow-sm shadow-[#22C55E]/50 animate-pulse'
+              : isConnecting
                 ? 'bg-[#EAB308] animate-ping'
                 : 'bg-[#EF4444]'
-            }`}
+              }`}
           />
           <span className="text-[#94A3B8]">
             {isConnected ? 'Server Online' : isConnecting ? 'Connecting...' : 'Offline'}
@@ -172,21 +171,24 @@ export const LandingPage: React.FC = () => {
 
       {/* Hero & Action Card Container */}
       <main className="w-full max-w-md my-auto flex flex-col items-center gap-8 z-10 pt-4">
-        {/* Hero Title & Rotating Subtitle */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-semibold tracking-wide">
-            <Sparkles className="w-3.5 h-3.5" /> Next-Gen Social Deduction
+        {/* Cinematic AAA Hero Title & Technical Subtitle */}
+        <div className="text-center flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-semibold tracking-wide mb-4">
+            <Sparkles className="w-3.5 h-3.5" /> Next-Gen Social Deduction Games
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white drop-shadow-sm">
-            WEREWOLF & HUB
+          <h1 className="font-['Montserrat'] text-5xl font-black text-white tracking-[0.2em] uppercase drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] select-none">
+            The Lobby
           </h1>
 
-          <div className="h-6 flex items-center justify-center">
+          <p className="font-['Space_Mono'] text-xs text-gray-400 tracking-[0.3em] uppercase mt-2">
+            MULTIPLAYER GAME HUB
+          </p>
+
+          <div className="h-6 flex items-center justify-center mt-3">
             <p
-              className={`text-sm sm:text-base font-serif italic text-[#94A3B8] transition-opacity duration-300 ${
-                fadeState ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`text-sm font-serif italic text-[#94A3B8] transition-opacity duration-300 ${fadeState ? 'opacity-100' : 'opacity-0'
+                }`}
             >
               "{FLAVOR_TEXTS[flavorIndex]}"
             </p>
@@ -215,11 +217,10 @@ export const LandingPage: React.FC = () => {
                 setLocalError(null);
                 clearErrors();
               }}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                mode === 'join'
-                  ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
-                  : 'text-[#94A3B8] hover:text-white'
-              }`}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${mode === 'join'
+                ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
+                : 'text-[#94A3B8] hover:text-white'
+                }`}
             >
               <Smartphone className="w-4 h-4 text-[#3B82F6]" />
               <span>Join Game</span>
@@ -232,11 +233,10 @@ export const LandingPage: React.FC = () => {
                 setLocalError(null);
                 clearErrors();
               }}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
-                mode === 'host'
-                  ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
-                  : 'text-[#94A3B8] hover:text-white'
-              }`}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${mode === 'host'
+                ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
+                : 'text-[#94A3B8] hover:text-white'
+                }`}
             >
               <Tv className="w-4 h-4 text-[#3B82F6]" />
               <span>Host on TV</span>
@@ -356,7 +356,7 @@ export const LandingPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full max-w-5xl flex items-center justify-between text-xs text-[#94A3B8] border-t border-[#1F2430] pt-4 z-10">
-        <span>FunFriday Game Hub • Social Deduction Suite</span>
+        <span>The Lobby • Multiplayer Game Hub</span>
         <span>Created by Pratik Mayekar</span>
       </footer>
     </div>

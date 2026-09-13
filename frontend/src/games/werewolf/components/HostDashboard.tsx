@@ -225,7 +225,7 @@ export const HostDashboard: React.FC = () => {
           <button
             onClick={() => setCurrentGameId(null)}
             className="w-10 h-10 rounded-xl bg-[#090A0F] border border-[#1F2430] hover:border-[#3B82F6] flex items-center justify-center text-[#94A3B8] hover:text-white transition cursor-pointer"
-            title="Back to Game Hub"
+            title="Back to The Lobby"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
