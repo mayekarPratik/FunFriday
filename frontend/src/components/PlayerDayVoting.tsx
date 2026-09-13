@@ -22,6 +22,13 @@ export const PlayerDayVoting: React.FC = () => {
   const livingPlayers = gameState.players.filter((p) => p.is_alive);
   const otherLivingPlayers = livingPlayers.filter((p) => p.socket_id !== me.socket_id);
 
+  const isExecutioner = me.role === 'executioner';
+  const executionerTargetId = gameState.role_states?.executioner?.target_id;
+  const targetPlayer = executionerTargetId
+    ? gameState.players.find((p) => p.socket_id === executionerTargetId)
+    : null;
+  const targetName = targetPlayer ? targetPlayer.name : 'Unknown';
+
   const handleVote = (targetSocketId: string) => {
     if (!isAlive) return;
     setSelectedTarget(targetSocketId);
@@ -29,7 +36,16 @@ export const PlayerDayVoting: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col gap-5 pb-8">
+    <div className="w-full max-w-md mx-auto flex flex-col gap-5 pb-8 relative">
+      {/* Executioner Target Banner */}
+      {isExecutioner && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 pointer-events-none z-10 whitespace-nowrap">
+          <span className="text-purple-500 text-sm font-bold tracking-widest">
+            TARGET: {targetName}
+          </span>
+        </div>
+      )}
+
       {/* Header Info */}
       <div className="wope-card p-5 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-2.5">

@@ -6,9 +6,9 @@ export type RoleType =
   | 'wolf'
   | 'witch'
   | 'seer'
-  | 'hunter'
-  | 'bear_tamer'
   | 'villager'
+  | 'jester'
+  | 'executioner'
   | '';
 
 export const MASTER_NIGHT_ORDER: RoleType[] = ['cupid', 'doctor', 'wolf', 'witch', 'seer'];
@@ -19,9 +19,9 @@ export const ROLE_PRIORITIES: Record<string, number> = {
   wolf: 3,
   witch: 4,
   seer: 5,
-  hunter: 0,
-  bear_tamer: 0,
   villager: 0,
+  jester: 0,
+  executioner: 0,
   '': 0
 };
 
@@ -38,17 +38,13 @@ export interface WitchRoleState {
   has_poison: boolean;
 }
 
-export interface RoleStates {
-  witch?: WitchRoleState;
-  [key: string]: any;
+export interface ExecutionerRoleState {
+  target_id: string | null;
 }
 
-export interface NightActionPayload {
-  target_socket_id?: string;
-  target_socket_ids?: string[]; // for cupid lovers
-  action_type?: 'kill' | 'heal' | 'poison' | 'inspect' | 'link';
-  heal_target?: string | null;
-  poison_target?: string | null;
+export interface RoleStates {
+  witch?: WitchRoleState;
+  executioner?: ExecutionerRoleState;
   [key: string]: any;
 }
 
@@ -57,10 +53,10 @@ export interface RoleSettings {
   seer: number;
   doctor: number;
   witch: number;
-  hunter: number;
   cupid: number;
-  bear_tamer: number;
   villager: number;
+  jester: number;
+  executioner: number;
   [key: string]: number;
 }
 
@@ -69,11 +65,21 @@ export const DEFAULT_ROLE_SETTINGS: RoleSettings = {
   seer: 1,
   doctor: 1,
   witch: 1,
-  hunter: 1,
   cupid: 1,
-  bear_tamer: 1,
-  villager: 1
+  villager: 1,
+  jester: 1,
+  executioner: 1
 };
+
+export interface NightActionPayload {
+  target_socket_id?: string;
+  target_socket_ids?: string[]; // for cupid lovers
+  action_type?: 'kill' | 'heal' | 'poison' | 'inspect' | 'link';
+  heal_target?: string | null;
+  poison_target?: string | null;
+  sender_socket_id?: string;
+  [key: string]: any;
+}
 
 export interface GameState {
   room_code: string;
@@ -90,7 +96,7 @@ export interface GameState {
   last_day_eliminated?: string | null;
   votes?: Record<string, string>; // voter_socket_id -> target_socket_id
   timer_ends_at?: number | null;
-  winner?: 'wolves' | 'villagers' | null;
+  winner?: 'wolves' | 'villagers' | 'jester' | 'executioner' | null;
 }
 
 export interface CreateRoomResponse {

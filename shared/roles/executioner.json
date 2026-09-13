@@ -1,0 +1,9 @@
+{
+  "id": "executioner",
+  "name": "Executioner",
+  "team": "neutral",
+  "color_theme": "bg-purple-600",
+  "description": "Assigned a specific townsperson target. Wins immediately if their target is executed during the day trial. Converts into a Jester if the target dies at night.",
+  "is_passive_at_night": true,
+  "night_priority": 0
+}

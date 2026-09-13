@@ -9,6 +9,8 @@ export const GameOverDisplay: React.FC = () => {
 
   const winner = gameState.winner || 'villagers';
   const isWolvesWin = winner === 'wolves';
+  const isJesterWin = winner === 'jester';
+  const isExecutionerWin = winner === 'executioner';
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center gap-8 py-8">
@@ -17,13 +19,19 @@ export const GameOverDisplay: React.FC = () => {
         {/* Glow backdrop based on winner */}
         <div
           className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 blur-3xl rounded-full pointer-events-none ${
-            isWolvesWin ? 'bg-red-600/20' : 'bg-emerald-600/20'
+            isWolvesWin
+              ? 'bg-red-600/20'
+              : isJesterWin || isExecutionerWin
+              ? 'bg-purple-600/20'
+              : 'bg-emerald-600/20'
           }`}
         />
 
         <div className="w-24 h-24 rounded-3xl bg-[#191C28] border border-[#1F2430] flex items-center justify-center mb-6 shadow-2xl">
           {isWolvesWin ? (
             <Skull className="w-14 h-14 text-red-500 animate-bounce" />
+          ) : isJesterWin || isExecutionerWin ? (
+            <Trophy className="w-14 h-14 text-purple-400 animate-bounce" />
           ) : (
             <Trophy className="w-14 h-14 text-emerald-400 animate-bounce" />
           )}
@@ -32,17 +40,31 @@ export const GameOverDisplay: React.FC = () => {
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono uppercase tracking-widest mb-3 border bg-[#090A0F]/80">
           {isWolvesWin ? (
             <span className="text-red-400">🐺 THE PACK PREVAILS</span>
+          ) : isJesterWin ? (
+            <span className="text-purple-400">🃏 THE JESTER TRICKED EVERYONE</span>
+          ) : isExecutionerWin ? (
+            <span className="text-purple-400">⚔️ THE EXECUTIONER HAS THEIR REVENGE</span>
           ) : (
             <span className="text-emerald-400">🛡️ THE TOWN IS SAVED</span>
           )}
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-[#F8FAFC] mb-3">
-          {isWolvesWin ? 'Werewolves Win!' : 'Villagers Win!'}
+          {isWolvesWin
+            ? 'Werewolves Win!'
+            : isJesterWin
+            ? 'Jester Wins!'
+            : isExecutionerWin
+            ? 'Executioner Wins!'
+            : 'Villagers Win!'}
         </h1>
         <p className="text-sm sm:text-base text-[#94A3B8] max-w-md mb-8">
           {isWolvesWin
             ? 'The Werewolves successfully outnumbered the innocent townspeople.'
+            : isJesterWin
+            ? 'The Jester successfully baited the village into voting them out during the day!'
+            : isExecutionerWin
+            ? 'The Executioner successfully convinced the village to execute their chosen target!'
             : 'All Werewolves have been discovered and eliminated by the village.'}
         </p>
 

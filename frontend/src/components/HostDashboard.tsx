@@ -16,9 +16,9 @@ import {
   Eye,
   HeartPulse,
   FlaskConical,
-  Crosshair,
   Heart,
-  PawPrint,
+  Sparkles,
+  Target,
   Sliders,
   CheckCircle2,
   AlertTriangle
@@ -72,15 +72,6 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     borderColor: 'border-purple-900/50'
   },
   {
-    id: 'hunter',
-    name: 'Hunter',
-    desc: 'Fires revenge shot upon elimination',
-    icon: Crosshair,
-    color: 'text-amber-400',
-    bgColor: 'bg-amber-950/30',
-    borderColor: 'border-amber-900/50'
-  },
-  {
     id: 'cupid',
     name: 'Cupid',
     desc: 'Binds two secret lovers together',
@@ -90,15 +81,6 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     borderColor: 'border-pink-900/50'
   },
   {
-    id: 'bear_tamer',
-    name: 'Bear Tamer',
-    desc: 'Growls when wolves sit nearby',
-    icon: PawPrint,
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-950/30',
-    borderColor: 'border-orange-900/50'
-  },
-  {
     id: 'villager',
     name: 'Villager',
     desc: 'Deduces and votes out wolves by day',
@@ -106,6 +88,24 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
     color: 'text-slate-300',
     bgColor: 'bg-slate-900/40',
     borderColor: 'border-slate-800'
+  },
+  {
+    id: 'jester',
+    name: 'Jester',
+    desc: 'Neutral trickster who wins if voted out',
+    icon: Sparkles,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-950/30',
+    borderColor: 'border-purple-900/50'
+  },
+  {
+    id: 'executioner',
+    name: 'Executioner',
+    desc: 'Neutral assassin hunting an assigned target',
+    icon: Target,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-950/30',
+    borderColor: 'border-purple-900/50'
   }
 ];
 

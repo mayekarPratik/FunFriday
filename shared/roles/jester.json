@@ -1,0 +1,9 @@
+{
+  "id": "jester",
+  "name": "Jester",
+  "team": "neutral",
+  "color_theme": "bg-purple-600",
+  "description": "A lunatic whose sole goal is to get executed during the day trial. Wins immediately upon day vote elimination.",
+  "is_passive_at_night": true,
+  "night_priority": 0
+}

@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { GameState, RoleType, MASTER_NIGHT_ORDER, NightActionPayload, ROLE_PRIORITIES } from '../types/game';
+import { GameState, RoleType, MASTER_NIGHT_ORDER, NightActionPayload, ROLE_PRIORITIES, Player } from '../types/game';
 import { saveGameState, ROOM_TTL_SECONDS } from '../services/redis';
 
 export const getSocketRoomName = (roomCode: string): string => `lobby:${roomCode.toUpperCase()}`;
@@ -62,6 +62,7 @@ export function initializeNightPhase(state: GameState): void {
 /**
  * Evaluates night_actions when night_queue is empty.
  * Resolves wolf kills (unanimous or random selection for split votes).
+ * Converts Executioner to Jester if their target was killed at night.
  * Implements strict resolution order:
  * 1. Queue wolf_kill victim.
  * 2. If doctor_save matches victim, cancel kill.
@@ -144,6 +145,22 @@ export function resolveDaybreak(state: GameState): void {
     }
   });
 
+  // Check if Executioner's target was killed at night -> Executioner becomes Jester
+  const executionerTargetId = state.role_states?.executioner?.target_id;
+  if (executionerTargetId) {
+    const targetPlayer = state.players.find((p) => p.socket_id === executionerTargetId);
+    if (targetPlayer && !targetPlayer.is_alive) {
+      state.players.forEach((p) => {
+        if (p.role === 'executioner' && p.is_alive) {
+          p.role = 'jester';
+        }
+      });
+      if (state.role_states?.executioner) {
+        state.role_states.executioner.target_id = null;
+      }
+    }
+  }
+
   // Resolve Cupid Lovers (if one lover died, the other dies too)
   const deadLovers = state.players.filter((p) => !p.is_alive && p.is_lover);
   if (deadLovers.length > 0) {
@@ -179,7 +196,90 @@ export function resolveDaybreak(state: GameState): void {
 }
 
 /**
- * Broadcasts game state to room and ensures Witch receives night_actions.wolf_kill
+ * Resolves day voting trial and checks neutral win conditions:
+ * - If Jester is eliminated by vote -> Jester wins.
+ * - If Executioner's target is eliminated by vote -> Executioner wins.
+ * - Otherwise evaluates standard win conditions.
+ */
+export function resolveDayVote(state: GameState): GameState {
+  const votes = state.votes || {};
+  const voteCounts: Record<string, number> = {};
+
+  Object.values(votes).forEach((targetId) => {
+    if (targetId && targetId !== 'skip') {
+      voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+    }
+  });
+
+  let highestVoteCount = 0;
+  let eliminatedSocketId: string | null = null;
+
+  for (const [targetId, count] of Object.entries(voteCounts)) {
+    if (count > highestVoteCount) {
+      highestVoteCount = count;
+      eliminatedSocketId = targetId;
+    }
+  }
+
+  let eliminatedPlayer: Player | undefined = undefined;
+  let eliminatedPlayerName: string | null = null;
+
+  if (eliminatedSocketId) {
+    eliminatedPlayer = state.players.find((p) => p.socket_id === eliminatedSocketId);
+    if (eliminatedPlayer && eliminatedPlayer.is_alive) {
+      eliminatedPlayer.is_alive = false;
+      eliminatedPlayerName = eliminatedPlayer.name;
+
+      // Cupid lovers resolution
+      if (eliminatedPlayer.is_lover) {
+        const partner = state.players.find(
+          (p) => p.is_lover && p.is_alive && p.socket_id !== eliminatedPlayer!.socket_id
+        );
+        if (partner) {
+          partner.is_alive = false;
+          eliminatedPlayerName = `${eliminatedPlayer.name} & ${partner.name} (Lover)`;
+        }
+      }
+    }
+  }
+
+  state.last_day_eliminated = eliminatedPlayerName;
+  state.votes = {};
+  state.timer_ends_at = null;
+
+  // 1. Jester Win Condition: If player with most votes is the Jester
+  if (eliminatedPlayer && eliminatedPlayer.role === 'jester') {
+    state.phase = 'game_over';
+    state.winner = 'jester';
+    return state;
+  }
+
+  // 2. Executioner Win Condition: If player with most votes matches Executioner's target_id
+  const executionerTargetId = state.role_states?.executioner?.target_id;
+  const livingExecutioner = state.players.find((p) => p.role === 'executioner' && p.is_alive);
+  if (eliminatedSocketId && executionerTargetId && eliminatedSocketId === executionerTargetId && livingExecutioner) {
+    state.phase = 'game_over';
+    state.winner = 'executioner';
+    return state;
+  }
+
+  // 3. Standard win conditions (Wolves vs Villagers)
+  const winner = evaluateWinConditions(state);
+  if (winner) {
+    state.phase = 'game_over';
+    state.winner = winner;
+  } else {
+    // Shift back to Night phase with fresh dynamic night_queue
+    initializeNightPhase(state);
+  }
+
+  return state;
+}
+
+/**
+ * Broadcasts game state to room and delivers role-specific private payloads:
+ * - Witch receives night_actions.wolf_kill
+ * - Executioner receives role_states.executioner.target_id
  */
 export function broadcastGameState(io: Server, state: GameState): void {
   const socketRoom = getSocketRoomName(state.room_code);
@@ -194,21 +294,32 @@ export function broadcastGameState(io: Server, state: GameState): void {
     state.night_actions.wolf_kill = wolfKill;
   }
 
+  // Broadcast base state to room
   io.to(socketRoom).emit('game_state_update', state);
 
-  // Ensure any connected Witch socket receives a payload with wolf_kill included
+  // Send private targeted payload to Witch and Executioner
   state.players.forEach((player) => {
-    if (player.role === 'witch') {
-      const witchSocket = io.sockets?.sockets?.get(player.socket_id);
-      if (witchSocket) {
-        const witchState: GameState = {
+    const playerSocket = io.sockets?.sockets?.get(player.socket_id);
+    if (playerSocket) {
+      const isWitch = player.role === 'witch';
+      const isExecutioner = player.role === 'executioner';
+      const executionerTargetId = state.role_states?.executioner?.target_id;
+
+      if (isWitch || isExecutioner) {
+        const customizedState: GameState = {
           ...state,
           night_actions: {
             ...(state.night_actions || {}),
-            ...(wolfKill ? { wolf_kill: wolfKill } : {})
+            ...(isWitch && wolfKill ? { wolf_kill: wolfKill } : {})
+          },
+          role_states: {
+            ...(state.role_states || {}),
+            ...(isExecutioner && executionerTargetId
+              ? { executioner: { target_id: executionerTargetId } }
+              : {})
           }
         };
-        witchSocket.emit('game_state_update', witchState);
+        playerSocket.emit('game_state_update', customizedState);
       }
     }
   });

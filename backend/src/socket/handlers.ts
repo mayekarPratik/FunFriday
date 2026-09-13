@@ -18,6 +18,7 @@ import {
   initializeNightPhase,
   handleNightAction,
   resolveDaybreak,
+  resolveDayVote,
   evaluateWinConditions,
   getSocketRoomName,
   broadcastGameState
@@ -54,6 +55,9 @@ export function registerSocketHandlers(io: Server): void {
             witch: {
               has_heal: true,
               has_poison: true
+            },
+            executioner: {
+              target_id: null
             }
           },
           role_settings: { ...DEFAULT_ROLE_SETTINGS },
@@ -200,7 +204,7 @@ export function registerSocketHandlers(io: Server): void {
     /**
      * Handler for 'start_game'
      * Reads custom role_settings from Redis, generates flat deck, randomizes with Fisher-Yates shuffle,
-     * assigns roles to players, shifts to night phase, saves to Redis, and broadcasts state.
+     * assigns roles to players, assigns Executioner target, shifts to night phase, saves to Redis, and broadcasts state.
      */
     socket.on('start_game', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
       try {
@@ -257,11 +261,28 @@ export function registerSocketHandlers(io: Server): void {
           player.is_lover = false;
         });
 
-        // Initialize role states (Witch starts with heal and poison potions)
+        // If Executioner is assigned to a player, randomly select one Good player (Villager, Seer, Doctor, or Cupid)
+        const executionerPlayer = state.players.find((p) => p.role === 'executioner');
+        let executionerTargetId: string | null = null;
+        if (executionerPlayer) {
+          const goodRoles: RoleType[] = ['villager', 'seer', 'doctor', 'cupid'];
+          const eligibleTargets = state.players.filter(
+            (p) => goodRoles.includes(p.role) && p.socket_id !== executionerPlayer.socket_id
+          );
+          if (eligibleTargets.length > 0) {
+            const selectedTarget = eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
+            executionerTargetId = selectedTarget.socket_id;
+          }
+        }
+
+        // Initialize role states (Witch potions & Executioner target)
         state.role_states = {
           witch: {
             has_heal: true,
             has_poison: true
+          },
+          executioner: {
+            target_id: executionerTargetId
           }
         };
 
@@ -368,56 +389,7 @@ export function registerSocketHandlers(io: Server): void {
      * Helper to tally votes and transition to game_over or next night
      */
     const tallyAndAdvance = async (state: GameState, roomCode: string) => {
-      const votes = state.votes || {};
-      const voteCounts: Record<string, number> = {};
-
-      Object.values(votes).forEach((targetId) => {
-        if (targetId && targetId !== 'skip') {
-          voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
-        }
-      });
-
-      let highestVoteCount = 0;
-      let eliminatedSocketId: string | null = null;
-
-      for (const [targetId, count] of Object.entries(voteCounts)) {
-        if (count > highestVoteCount) {
-          highestVoteCount = count;
-          eliminatedSocketId = targetId;
-        }
-      }
-
-      let eliminatedPlayerName: string | null = null;
-      if (eliminatedSocketId) {
-        const victim = state.players.find((p) => p.socket_id === eliminatedSocketId);
-        if (victim && victim.is_alive) {
-          victim.is_alive = false;
-          eliminatedPlayerName = victim.name;
-
-          // Check if eliminated player was a Cupid lover
-          if (victim.is_lover) {
-            const partner = state.players.find((p) => p.is_lover && p.is_alive && p.socket_id !== victim.socket_id);
-            if (partner) {
-              partner.is_alive = false;
-              eliminatedPlayerName = `${victim.name} & ${partner.name} (Lover)`;
-            }
-          }
-        }
-      }
-
-      state.last_day_eliminated = eliminatedPlayerName;
-      state.votes = {};
-      state.timer_ends_at = null;
-
-      const winner = evaluateWinConditions(state);
-      if (winner) {
-        state.phase = 'game_over';
-        state.winner = winner;
-      } else {
-        // Shift back to Night phase with fresh night_queue
-        initializeNightPhase(state);
-      }
-
+      resolveDayVote(state);
       await saveGameState(state, ROOM_TTL_SECONDS);
       broadcastGameState(io, state);
     };

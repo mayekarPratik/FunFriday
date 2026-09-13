@@ -1,0 +1,9 @@
+{
+  "id": "cupid",
+  "name": "Cupid",
+  "team": "villagers",
+  "color_theme": "bg-pink-600",
+  "description": "Binds two secret lovers together on the first night.",
+  "is_passive_at_night": false,
+  "night_priority": 1
+}
