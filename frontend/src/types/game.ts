@@ -124,6 +124,7 @@ export interface GameState {
   room_code: string;
   phase: GamePhase;
   host_socket_id: string;
+  game_id?: string | null;
   active_role_priority: number;
   active_role?: RoleType | null;
   night_queue?: RoleType[];
@@ -137,9 +138,9 @@ export interface GameState {
   recent_deaths?: string[];
   last_night_killed?: string | null;
   last_day_eliminated?: string | null;
-  votes?: Record<string, string>; // voter_socket_id -> target_socket_id
+  votes?: Record<string, string>;
   timer_ends_at?: number | null;
-  day_ends_at?: number | null; // Absolute UTC timestamp for Day phase sync
+  day_ends_at?: number | null;
   winner?: WinnerType;
   seer_result?: { target_socket_id: string; is_wolf: boolean; target_name?: string } | null;
   executioner_target?: string | null;
@@ -148,8 +149,8 @@ export interface GameState {
 export interface CreateRoomResponse {
   success: boolean;
   room_code?: string;
-  error?: string;
   state?: GameState;
+  error?: string;
 }
 
 export interface JoinRoomPayload {
@@ -159,12 +160,12 @@ export interface JoinRoomPayload {
 
 export interface JoinRoomResponse {
   success: boolean;
-  error?: string;
   state?: GameState;
+  error?: string;
 }
 
 export interface StartGameResponse {
   success: boolean;
-  error?: string;
   state?: GameState;
+  error?: string;
 }

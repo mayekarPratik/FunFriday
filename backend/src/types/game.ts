@@ -124,6 +124,7 @@ export interface GameState {
   room_code: string;
   phase: GamePhase;
   host_socket_id: string;
+  game_id?: string | null;
   active_role_priority: number;
   active_role?: RoleType | null;
   night_queue?: RoleType[];

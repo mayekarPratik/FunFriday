@@ -271,11 +271,49 @@ export function registerSocketHandlers(io: Server): void {
     });
 
     /**
+     * Handler for 'select_game' (Game Hub selection)
+     */
+    socket.on('select_game', async (payload: { room_code?: string; gameId?: string; game_id?: string }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+        if (!roomCode) throw new Error('Room code not found');
+
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error(`Room '${roomCode}' not found`);
+
+        if (state.host_socket_id !== socket.id) {
+          throw new Error('Only the host can select a game');
+        }
+
+        const gameId = payload.gameId || payload.game_id || 'werewolf';
+        state.game_id = gameId;
+
+        await saveGameState(state, ROOM_TTL_SECONDS);
+        broadcastGameState(io, state);
+        io.to(getSocketRoomName(roomCode)).emit('game_selected', { gameId });
+
+        console.log(`[Game Selected] Room ${roomCode} -> Game: ${gameId}`);
+        if (typeof callback === 'function') callback({ success: true, state, gameId });
+      } catch (error: any) {
+        console.error('[select_game error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
+      }
+    });
+
+    /**
      * Handler for 'start_game'
      * Reads custom role_settings from Redis, generates flat deck, randomizes with Fisher-Yates shuffle,
      * assigns roles to players, assigns Executioner target, shifts to night phase, saves to Redis, and broadcasts state.
      */
-    socket.on('start_game', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
+    socket.on('start_game', async (payload: { room_code?: string; gameId?: string; game_id?: string }, callback?: (response: any) => void) => {
       try {
         let roomCode = payload?.room_code?.toUpperCase();
 
@@ -362,6 +400,8 @@ export function registerSocketHandlers(io: Server): void {
 
         // 5. Change phase to 'night' and populate night queue
         initializeNightPhase(state);
+
+        state.game_id = payload?.gameId || payload?.game_id || state.game_id || 'werewolf';
 
         // 6. Save updated players & state to Redis
         await saveGameState(state, ROOM_TTL_SECONDS);
