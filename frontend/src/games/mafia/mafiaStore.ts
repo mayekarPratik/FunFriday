@@ -277,7 +277,7 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
     const roomCode = core.roomCode || get().room_code;
     if (!socket || !roomCode) return;
 
-    socket.emit('mafia_restart_game', { room_code: roomCode });
+    socket.emit('return_to_lobby', { room_code: roomCode, roomCode });
   },
 
   clearErrors: () => set({ lastActionError: null }),

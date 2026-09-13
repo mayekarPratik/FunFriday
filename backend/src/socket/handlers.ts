@@ -581,12 +581,55 @@ export function registerSocketHandlers(io: Server): void {
     });
 
     /**
+     * Handler for 'return_to_lobby'
+     * Clears currentGame state and roles for that room, preserves players & room, and broadcasts returned_to_lobby
+     */
+    socket.on('return_to_lobby', async (payload: { room_code?: string; roomCode?: string }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = (payload?.room_code || payload?.roomCode)?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+        if (!roomCode) throw new Error('Room code required');
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error('Room not found');
+
+        if (state.host_socket_id !== socket.id) {
+          throw new Error('Only the Host can return the room to the lobby');
+        }
+
+        const resetState = await resetGameState(roomCode);
+        resetState.game_id = null;
+        delete resetState.mafia_state;
+
+        await saveGameState(resetState, ROOM_TTL_SECONDS);
+
+        const socketRoom = getSocketRoomName(roomCode);
+        console.log(`[Returned To Lobby] Room: ${roomCode} reset to Hub with ${resetState.players.length} players`);
+
+        broadcastGameState(io, resetState);
+        io.to(socketRoom).emit('returned_to_lobby', { roomCode, state: resetState });
+        io.to(socketRoom).emit('game_selected', { gameId: null });
+
+        if (typeof callback === 'function') callback({ success: true, state: resetState });
+      } catch (error: any) {
+        console.error('[return_to_lobby error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
+      }
+    });
+
+    /**
      * Handler for 'host_restart_game' (Play Again)
      * Resets game state back to 'lobby', clears roles and statuses, and broadcasts state to the room
      */
-    socket.on('host_restart_game', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
+    socket.on('host_restart_game', async (payload: { room_code?: string; roomCode?: string }, callback?: (response: any) => void) => {
       try {
-        let roomCode = payload?.room_code?.toUpperCase();
+        let roomCode = (payload?.room_code || payload?.roomCode)?.toUpperCase();
         if (!roomCode) {
           for (const room of socket.rooms) {
             if (room.startsWith('lobby:')) {

@@ -7,6 +7,9 @@ import { ServerWakeupModal } from './components/ServerWakeupModal';
 import { InteractiveBackground } from './components/InteractiveBackground';
 import { Wifi, WifiOff, RefreshCw, AlertCircle, Shield } from 'lucide-react';
 
+import { useMafiaStore } from './games/mafia/mafiaStore';
+import { useWerewolfStore } from './games/werewolf/werewolfStore';
+
 // Lazy load the isolated Game modules
 const WerewolfMaster = lazy(() => import('./games/werewolf/WerewolfMaster'));
 const MafiaMaster = lazy(() => import('./games/mafia/MafiaMaster'));
@@ -40,9 +43,18 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleGameSelected = (data: { gameId: string; game_id?: string }) => {
-      const selectedId = data?.gameId || data?.game_id;
-      if (!selectedId) return;
+    const handleGameSelected = (data: { gameId: string | null; game_id?: string | null }) => {
+      const selectedId = data?.gameId !== undefined ? data.gameId : data?.game_id;
+
+      // If returning to hub (gameId is null / falsy), instantly clear currentGameId and reset module stores
+      if (!selectedId) {
+        setCurrentGameId(null);
+        setPendingGameId(null);
+        setTvState('idle');
+        useMafiaStore.getState().resetGame();
+        useWerewolfStore.getState().resetGame();
+        return;
+      }
 
       // Clear any prior transition timers
       if (offTimeoutRef.current) clearTimeout(offTimeoutRef.current);
@@ -64,9 +76,20 @@ export const App: React.FC = () => {
       }, 600);
     };
 
+    const handleReturnedToLobby = () => {
+      setCurrentGameId(null);
+      setPendingGameId(null);
+      setTvState('idle');
+      useMafiaStore.getState().resetGame();
+      useWerewolfStore.getState().resetGame();
+    };
+
     socket.on('game_selected', handleGameSelected);
+    socket.on('returned_to_lobby', handleReturnedToLobby);
+
     return () => {
       socket.off('game_selected', handleGameSelected);
+      socket.off('returned_to_lobby', handleReturnedToLobby);
       if (offTimeoutRef.current) clearTimeout(offTimeoutRef.current);
       if (onTimeoutRef.current) clearTimeout(onTimeoutRef.current);
     };

@@ -32,7 +32,9 @@ export interface WerewolfStore {
   tallyDayVotes: () => void;
   hostAdvancePhase: () => void;
   hostRestartGame: () => void;
+  returnToLobby: () => void;
   leaveGame: () => void;
+  resetGame: () => void;
   clearErrors: () => void;
 }
 
@@ -223,13 +225,31 @@ export const useWerewolfStore = create<WerewolfStore>((set, get) => ({
     const { gameState } = get();
     const roomCode = core.roomCode || gameState?.room_code;
     if (core.socket && roomCode) {
-      core.socket.emit('host_restart_game', { room_code: roomCode });
+      core.socket.emit('host_restart_game', { room_code: roomCode, roomCode });
+    }
+  },
+
+  returnToLobby: () => {
+    const core = useCoreStore.getState();
+    const { gameState } = get();
+    const roomCode = core.roomCode || gameState?.room_code;
+    if (core.socket && roomCode) {
+      core.socket.emit('return_to_lobby', { room_code: roomCode, roomCode });
     }
   },
 
   leaveGame: () => {
     set({
       gameState: null,
+      lastActionError: null
+    });
+  },
+
+  resetGame: () => {
+    set({
+      gameState: null,
+      role_settings: { ...DEFAULT_ROLE_SETTINGS },
+      settings: { ...DEFAULT_GAME_SETTINGS },
       lastActionError: null
     });
   },

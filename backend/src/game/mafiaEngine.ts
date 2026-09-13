@@ -654,11 +654,11 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
   });
 
   /**
-   * Host Restart Mafia Game
+   * Host Restart Mafia Game / Return to Hub
    */
-  socket.on('mafia_restart_game', async (payload: { room_code?: string }, callback?: (res: any) => void) => {
+  const handleMafiaRestart = async (payload: { room_code?: string; roomCode?: string }, callback?: (res: any) => void) => {
     try {
-      let roomCode = payload?.room_code?.toUpperCase();
+      let roomCode = (payload?.room_code || payload?.roomCode)?.toUpperCase();
       if (!roomCode) {
         for (const room of socket.rooms) {
           if (room.startsWith('lobby:')) {
@@ -689,12 +689,17 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
       await saveGameState(state, ROOM_TTL_SECONDS);
       broadcastGameState(io, state);
 
-      io.to(getSocketRoomName(roomCode)).emit('game_selected', { gameId: null });
+      const socketRoom = getSocketRoomName(roomCode);
+      io.to(socketRoom).emit('returned_to_lobby', { roomCode, state });
+      io.to(socketRoom).emit('game_selected', { gameId: null });
 
       if (typeof callback === 'function') callback({ success: true });
     } catch (error: any) {
       console.error('[mafia_restart_game error]:', error.message);
       if (typeof callback === 'function') callback({ success: false, error: error.message });
     }
-  });
+  };
+
+  socket.on('mafia_restart_game', handleMafiaRestart);
+  socket.on('return_to_lobby', handleMafiaRestart);
 }

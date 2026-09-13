@@ -5,7 +5,7 @@ import { Trophy, Skull, RotateCcw, LogOut } from 'lucide-react';
 
 export const GameOverDisplay: React.FC = () => {
   const { gameState, hostRestartGame } = useWerewolfStore();
-  const { activeRoleMode, leaveRoom } = useCoreStore();
+  const { activeRoleMode } = useCoreStore();
 
   if (!gameState) return null;
 
@@ -137,20 +137,16 @@ export const GameOverDisplay: React.FC = () => {
 
               <button
                 type="button"
-                onClick={leaveRoom}
+                onClick={() => useWerewolfStore.getState().returnToLobby()}
                 className="py-3.5 px-6 rounded-xl bg-[#191C28] hover:bg-[#1F2430] border border-[#1F2430] text-[#94A3B8] hover:text-white font-medium text-sm transition flex items-center gap-2 cursor-pointer"
               >
-                <LogOut className="w-4 h-4" /> Exit to The Lobby
+                <LogOut className="w-4 h-4" /> Return to The Lobby
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={leaveRoom}
-              className="py-3.5 px-8 rounded-xl bg-[#191C28] hover:bg-[#1F2430] border border-[#1F2430] text-[#94A3B8] hover:text-white font-medium text-sm transition flex items-center gap-2 cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" /> Exit to The Lobby
-            </button>
+            <div className="text-xs text-[#94A3B8] font-mono">
+              Waiting for Host to choose next action...
+            </div>
           )}
         </div>
       </div>
