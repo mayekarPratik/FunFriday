@@ -17,7 +17,9 @@ import {
   Sliders,
   Sparkles,
   Zap,
-  ArrowLeft
+  ArrowLeft,
+  RotateCcw,
+  LogOut
 } from 'lucide-react';
 
 export const MafiaHost: React.FC = () => {
@@ -188,12 +190,25 @@ export const MafiaHost: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-4 flex justify-center">
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
             <button
+              type="button"
               onClick={hostRestartGame}
-              className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] font-bold text-white shadow-xl shadow-[#3B82F6]/30 cursor-pointer active:scale-95 transition"
+              className="py-3.5 px-8 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] font-bold text-sm text-white shadow-xl shadow-[#3B82F6]/30 cursor-pointer active:scale-95 transition flex items-center gap-2"
             >
-              Return to The Lobby
+              <LogOut className="w-4 h-4" /> Return to Main Game Hub
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const core = useCoreStore.getState();
+                if (core.socket && roomCode) {
+                  core.socket.emit('start_mafia_game', { room_code: roomCode, settings });
+                }
+              }}
+              className="py-3.5 px-6 rounded-xl bg-[#191C28] hover:bg-[#1F2430] border border-[#1F2430] text-[#94A3B8] hover:text-white font-medium text-sm transition flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              <RotateCcw className="w-4 h-4" /> Play Mafia Again
             </button>
           </div>
         </div>
