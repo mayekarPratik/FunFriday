@@ -25,6 +25,7 @@ import {
   broadcastGameState,
   resetGameState
 } from '../game/engine';
+import { registerMafiaHandlers } from '../game/mafiaEngine';
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -38,6 +39,9 @@ function shuffleArray<T>(array: T[]): T[] {
 export function registerSocketHandlers(io: Server): void {
   io.on('connection', (socket: Socket) => {
     console.log(`[Socket] Client connected: ${socket.id}`);
+
+    // Register Mafia Game Handlers
+    registerMafiaHandlers(io, socket);
 
     /**
      * Handler for 'create_room'

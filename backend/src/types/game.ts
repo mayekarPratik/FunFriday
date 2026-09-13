@@ -144,6 +144,7 @@ export interface GameState {
   winner?: WinnerType;
   seer_result?: { target_socket_id: string; is_wolf: boolean; target_name?: string } | null;
   executioner_target?: string | null;
+  mafia_state?: any;
 }
 
 export interface CreateRoomResponse {

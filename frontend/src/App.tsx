@@ -7,8 +7,9 @@ import { ServerWakeupModal } from './components/ServerWakeupModal';
 import { InteractiveBackground } from './components/InteractiveBackground';
 import { Wifi, WifiOff, RefreshCw, AlertCircle, Shield } from 'lucide-react';
 
-// Lazy load the isolated Werewolf Master module
+// Lazy load the isolated Game modules
 const WerewolfMaster = lazy(() => import('./games/werewolf/WerewolfMaster'));
+const MafiaMaster = lazy(() => import('./games/mafia/MafiaMaster'));
 
 export const App: React.FC = () => {
   const {
@@ -99,6 +100,24 @@ export const App: React.FC = () => {
           }
         >
           <WerewolfMaster />
+        </Suspense>
+      );
+    }
+
+    // 4. If Mafia is chosen, render lazy-loaded MafiaMaster
+    if (currentGameId === 'mafia') {
+      return (
+        <Suspense
+          fallback={
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-white">
+              <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
+              <span className="font-mono text-xs uppercase tracking-widest text-[#94A3B8]">
+                Loading Mafia Module...
+              </span>
+            </div>
+          }
+        >
+          <MafiaMaster />
         </Suspense>
       );
     }
