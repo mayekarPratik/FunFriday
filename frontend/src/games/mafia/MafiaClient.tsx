@@ -238,51 +238,116 @@ export const MafiaClient: React.FC = () => {
         {me.role === 'detective' && (
           <div className="w-full space-y-4">
             <div className="text-center space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono font-bold uppercase tracking-wider mb-1">
+                <Search className="w-3.5 h-3.5" /> Private Investigation
+              </div>
               <h3 className="text-base font-bold text-white">Investigate a Suspect</h3>
-              <p className="text-xs text-[#94A3B8]">Discover their secret alignment.</p>
+              <p className="text-xs text-[#94A3B8]">
+                {myInvestigation
+                  ? 'Your investigation report is ready. Results are private to your device.'
+                  : 'Select one living player to discover their true alignment.'}
+              </p>
             </div>
 
+            {/* Private Detective Investigation Reveal Card */}
             {myInvestigation && (
-              <div className={`p-4 rounded-2xl border text-center space-y-2 animate-fadeIn ${
-                myInvestigation.is_mafia
-                  ? 'bg-red-950/40 border-red-700 text-red-300'
-                  : 'bg-blue-950/40 border-blue-700 text-blue-300'
-              }`}>
-                <div className="text-xs font-mono uppercase font-bold tracking-widest">Investigation Dossier</div>
-                <h4 className="text-xl font-serif text-white font-bold">{myInvestigation.target_name}</h4>
-                <p className="text-sm font-bold uppercase tracking-wider">
-                  {myInvestigation.is_mafia ? '⚠️ Identified as MAFIA' : '✓ Appears INNOCENT'}
+              <div
+                className={`w-full p-6 rounded-3xl border text-center space-y-3 shadow-2xl backdrop-blur-xl animate-fadeIn relative overflow-hidden ${
+                  myInvestigation.is_mafia
+                    ? 'bg-red-950/70 border-red-600 shadow-red-950/60'
+                    : 'bg-emerald-950/70 border-emerald-600 shadow-emerald-950/60'
+                }`}
+              >
+                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-50" />
+
+                <span className="inline-block text-[10px] font-mono uppercase font-bold tracking-widest text-blue-300 bg-blue-950/60 border border-blue-800 px-3 py-1 rounded-full">
+                  Confidential Dossier
+                </span>
+
+                <div className="space-y-1">
+                  <h4 className="text-2xl font-serif text-white font-bold tracking-wide">
+                    {myInvestigation.targetName || myInvestigation.target_name}
+                  </h4>
+                  <div
+                    className={`text-lg font-mono font-extrabold uppercase tracking-widest ${
+                      myInvestigation.is_mafia ? 'text-red-400' : 'text-emerald-400'
+                    }`}
+                  >
+                    {myInvestigation.is_mafia
+                      ? '⚠️ Appears to be MAFIA'
+                      : '✓ Appears to be a CITIZEN'}
+                  </div>
+                </div>
+
+                <p className="text-xs font-serif text-gray-300 italic pt-2 border-t border-white/10">
+                  "Investigation complete. Keep this intel secret until morning discussion."
                 </p>
               </div>
             )}
 
+            {/* Mutually Exclusive Player Selectable List */}
             <div className="grid grid-cols-1 gap-2.5">
-              {eligibleTargets.filter(p => p.socket_id !== me.socket_id).map((player) => {
-                const isSelected = selectedTarget === player.socket_id || selectedActionTarget === player.socket_id;
-                return (
-                  <button
-                    key={player.socket_id}
-                    onClick={() => {
-                      setSelectedTarget(player.socket_id);
-                      investigatePlayer(player.socket_id);
-                    }}
-                    className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-[0.98] ${
-                      isSelected
-                        ? 'bg-blue-950/60 border-blue-600 text-white shadow-lg shadow-blue-950/50'
-                        : 'bg-[#12141C] border-[#1F2430] hover:border-blue-500/50 text-[#94A3B8] hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#191C28] flex items-center justify-center text-sm font-bold text-white">
-                        {player.name.slice(0, 2).toUpperCase()}
+              {eligibleTargets
+                .filter((p) => p.socket_id !== me.socket_id)
+                .map((player) => {
+                  const isSelected = selectedTarget === player.socket_id || selectedActionTarget === player.socket_id;
+                  const isLocked = Boolean(myInvestigation);
+
+                  return (
+                    <button
+                      key={player.socket_id}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => {
+                        if (!isLocked) {
+                          setSelectedTarget(player.socket_id);
+                        }
+                      }}
+                      className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all duration-200 ${
+                        isLocked
+                          ? isSelected
+                            ? 'bg-blue-950/40 border-blue-600/60 text-white opacity-90 cursor-default'
+                            : 'bg-[#12141C]/40 border-[#1F2430]/60 text-[#64748B] opacity-50 cursor-not-allowed'
+                          : isSelected
+                          ? 'bg-blue-950/70 border-blue-500 text-white shadow-lg shadow-blue-950/50 ring-2 ring-blue-500/40 cursor-pointer active:scale-[0.99]'
+                          : 'bg-[#12141C] border-[#1F2430] hover:border-blue-500/50 text-[#94A3B8] hover:text-white cursor-pointer active:scale-[0.98]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#191C28] border border-[#1F2430] flex items-center justify-center text-sm font-bold text-white">
+                          {player.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="font-bold text-sm">{player.name}</span>
                       </div>
-                      <span className="font-bold text-sm">{player.name}</span>
-                    </div>
-                    {isSelected ? <Search className="w-5 h-5 text-blue-400" /> : <div className="w-4 h-4 rounded-full border border-[#1F2430]" />}
-                  </button>
-                );
-              })}
+
+                      {isSelected ? (
+                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-md">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border border-[#1F2430]" />
+                      )}
+                    </button>
+                  );
+                })}
             </div>
+
+            {/* Confirm Investigation Action Button */}
+            {!myInvestigation && (
+              <button
+                type="button"
+                disabled={!selectedTarget}
+                onClick={() => {
+                  if (selectedTarget) {
+                    investigatePlayer(selectedTarget);
+                  }
+                }}
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-white text-sm shadow-xl shadow-blue-600/25 transition cursor-pointer active:scale-95 flex items-center justify-center gap-2 mt-2"
+              >
+                <Search className="w-4 h-4" />
+                <span>Confirm Investigation</span>
+              </button>
+            )}
           </div>
         )}
       </div>

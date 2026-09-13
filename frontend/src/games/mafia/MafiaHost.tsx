@@ -165,7 +165,7 @@ export const MafiaHost: React.FC = () => {
             <h1 className="text-xl font-bold text-white mt-0.5">
               {phase === 'LOBBY' && 'Pre-Game Lounge & Rules Config'}
               {phase === 'ROLE_REVEAL' && 'Secret Roles Being Assigned...'}
-              {phase === 'NIGHT' && 'Night Phase — Eyes Closed'}
+              {phase === 'NIGHT' && 'Night Phase — The Detective is gathering clues...'}
               {phase === 'DAY' && 'Day Phase — Open Discussion & Voting'}
             </h1>
           </div>

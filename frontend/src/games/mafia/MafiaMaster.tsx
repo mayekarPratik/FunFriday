@@ -41,18 +41,36 @@ export const MafiaMaster: React.FC = () => {
       setMafiaState({ allActionsLocked: true });
     };
 
+    const handleDetectiveResult = (res: any) => {
+      if (res) {
+        setMafiaState({
+          myInvestigation: {
+            target_socket_id: res.target_socket_id || res.targetId,
+            target_name: res.targetName || res.target_name,
+            targetName: res.targetName || res.target_name,
+            alignment: res.alignment || (res.is_mafia ? 'Mafia' : 'Citizen'),
+            is_mafia: res.is_mafia ?? (res.alignment === 'Mafia')
+          }
+        });
+      }
+    };
+
     socket.on('mafia_state_update', handleMafiaState);
     socket.on('game_state_update', handleGameState);
     socket.on('mafia_day_started', (res: any) => {
       if (res && res.state) syncFromBackend(res.state);
     });
     socket.on('all_actions_locked', handleActionsLocked);
+    socket.on('detective_result', handleDetectiveResult);
+    socket.on('mafia_investigation_result', handleDetectiveResult);
 
     return () => {
       socket.off('mafia_state_update', handleMafiaState);
       socket.off('game_state_update', handleGameState);
       socket.off('mafia_day_started');
       socket.off('all_actions_locked', handleActionsLocked);
+      socket.off('detective_result', handleDetectiveResult);
+      socket.off('mafia_investigation_result', handleDetectiveResult);
     };
   }, [socket, syncFromBackend, setMafiaState]);
 

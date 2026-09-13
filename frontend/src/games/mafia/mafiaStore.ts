@@ -30,6 +30,8 @@ export interface RecentElimination {
 export interface InvestigationResult {
   target_socket_id: string;
   target_name: string;
+  targetName?: string;
+  alignment?: 'Mafia' | 'Citizen';
   is_mafia: boolean;
 }
 
@@ -215,12 +217,14 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
       }, (res: any) => {
         if (res && res.success) {
           const invResult: InvestigationResult = {
-            target_socket_id: res.target_socket_id,
-            target_name: res.target_name,
-            is_mafia: res.is_mafia
+            target_socket_id: res.target_socket_id || targetSocketId,
+            target_name: res.targetName || res.target_name,
+            targetName: res.targetName || res.target_name,
+            alignment: res.alignment || (res.is_mafia ? 'Mafia' : 'Citizen'),
+            is_mafia: res.is_mafia ?? (res.alignment === 'Mafia')
           };
           set({ myInvestigation: invResult, selectedActionTarget: targetSocketId });
-          resolve({ success: true, is_mafia: res.is_mafia });
+          resolve({ success: true, is_mafia: invResult.is_mafia });
         } else {
           const error = res?.error || 'Failed to investigate';
           set({ lastActionError: error });

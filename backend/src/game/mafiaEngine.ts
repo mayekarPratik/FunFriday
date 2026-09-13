@@ -455,7 +455,7 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
   /**
    * Detective Investigate
    */
-  socket.on('mafia_investigate', async (payload: { room_code?: string; target_socket_id: string }, callback?: (res: any) => void) => {
+  const handleDetectiveInvestigate = async (payload: { room_code?: string; target_socket_id: string; targetId?: string }, callback?: (res: any) => void) => {
     try {
       let roomCode = payload?.room_code?.toUpperCase();
       if (!roomCode) {
@@ -477,14 +477,19 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
         throw new Error('Only the living Detective can investigate');
       }
 
-      const target = mState.players.find((p) => p.socket_id === payload.target_socket_id);
+      const targetId = payload.target_socket_id || payload.targetId;
+      const target = mState.players.find((p) => p.socket_id === targetId);
       if (!target) throw new Error('Target player not found');
 
       const isMafia = target.role === 'mafia';
-      const result = {
+      const alignment: 'Mafia' | 'Citizen' = isMafia ? 'Mafia' : 'Citizen';
+
+      const privateResult = {
         success: true,
         target_socket_id: target.socket_id,
+        targetName: target.name,
         target_name: target.name,
+        alignment,
         is_mafia: isMafia
       };
 
@@ -493,18 +498,23 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
       state.mafia_state = mState;
       await saveGameState(state, ROOM_TTL_SECONDS);
 
-      socket.emit('mafia_investigation_result', result);
+      // Strictly emit private events ONLY to Detective's socket id
+      socket.emit('detective_result', privateResult);
+      socket.emit('mafia_investigation_result', privateResult);
 
       if (checkAllNightActionsLocked(mState)) {
         io.to(state.host_socket_id).emit('all_actions_locked', { phase: 'NIGHT' });
       }
 
-      if (typeof callback === 'function') callback(result);
+      if (typeof callback === 'function') callback(privateResult);
     } catch (error: any) {
       console.error('[mafia_investigate error]:', error.message);
       if (typeof callback === 'function') callback({ success: false, error: error.message });
     }
-  });
+  };
+
+  socket.on('mafia_investigate', handleDetectiveInvestigate);
+  socket.on('submit_night_action', handleDetectiveInvestigate);
 
   /**
    * Day Voting
