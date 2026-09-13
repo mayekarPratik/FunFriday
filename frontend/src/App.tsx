@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useGameStore } from './store/gameStore';
 import { HostEntry } from './components/HostEntry';
 import { PlayerEntry } from './components/PlayerEntry';
-import { HostLobby } from './components/HostLobby';
+import { HostDashboard } from './components/HostDashboard';
 import { PlayerWaiting } from './components/PlayerWaiting';
 import { NightPhase } from './components/NightPhase';
 import { HostNightDisplay } from './components/HostNightDisplay';
@@ -134,7 +134,7 @@ export const App: React.FC = () => {
                 <PlayerDayVoting />
               )
             ) : isHost ? (
-              <HostLobby />
+              <HostDashboard />
             ) : (
               <PlayerWaiting />
             )

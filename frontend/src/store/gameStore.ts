@@ -6,8 +6,10 @@ import type {
   CreateRoomResponse,
   JoinRoomResponse,
   StartGameResponse,
-  Player
+  Player,
+  RoleSettings
 } from '../types/game';
+import { DEFAULT_ROLE_SETTINGS } from '../types/game';
 
 const DEFAULT_SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -22,6 +24,7 @@ interface GameStore {
   myPlayerName: string | null;
   lastActionError: string | null;
   activeRoleMode: UserRoleMode;
+  role_settings: RoleSettings;
 
   // Selectors
   getMyPlayer: () => Player | undefined;
@@ -32,6 +35,7 @@ interface GameStore {
   createRoom: () => Promise<CreateRoomResponse>;
   joinRoom: (payload: JoinRoomPayload) => Promise<JoinRoomResponse>;
   startGame: () => Promise<StartGameResponse>;
+  updateRoleSettings: (settings: RoleSettings) => void;
   submitNightAction: (payloadOrTarget: string | { target_socket_id?: string; heal_target?: string | null; poison_target?: string | null; [key: string]: any }) => void;
   advanceNightPriority: (priority?: number) => void;
   resolveNightToDay: () => void;
@@ -51,6 +55,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   myPlayerName: null,
   lastActionError: null,
   activeRoleMode: null,
+  role_settings: { ...DEFAULT_ROLE_SETTINGS },
 
   getMyPlayer: () => {
     const { gameState, socket, myPlayerName } = get();
@@ -120,6 +125,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       console.log('[Socket] game_state_update received:', newState);
       set({
         gameState: newState,
+        role_settings: newState.role_settings || get().role_settings,
         lastActionError: null
       });
     });
@@ -206,6 +212,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       });
     });
+  },
+
+  updateRoleSettings: (settings: RoleSettings) => {
+    const { socket, gameState } = get();
+    set({ role_settings: settings });
+    if (gameState) {
+      set({
+        gameState: {
+          ...gameState,
+          role_settings: settings
+        }
+      });
+      if (socket) {
+        socket.emit('update_settings', {
+          room_code: gameState.room_code,
+          role_settings: settings
+        });
+      }
+    }
   },
 
   submitNightAction: (payloadOrTarget: string | { target_socket_id?: string; heal_target?: string | null; poison_target?: string | null; [key: string]: any }) => {

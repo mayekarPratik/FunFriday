@@ -25,7 +25,8 @@ export function evaluateWinConditions(state: GameState): 'wolves' | 'villagers' 
 
 /**
  * Initializes and shifts state to the 'night' phase.
- * Populates night_queue by filtering MASTER_NIGHT_ORDER to living assigned roles in the room.
+ * Maps over living players to get active roles, deduplicates them,
+ * and filters MASTER_NIGHT_ORDER to generate the dynamic night_queue.
  * Sets the first role as active_role and removes it from the queue.
  */
 export function initializeNightPhase(state: GameState): void {
@@ -33,12 +34,16 @@ export function initializeNightPhase(state: GameState): void {
   state.night_actions = {};
   state.votes = {};
 
-  const livingRoles = new Set(
-    state.players.filter((p) => p.is_alive).map((p) => p.role)
-  );
+  // Map over living players to get a list of active roles in the game
+  const livingPlayerRoles = state.players
+    .filter((p) => p.is_alive && p.role)
+    .map((p) => p.role as RoleType);
 
-  // Filter MASTER_NIGHT_ORDER to only include roles currently assigned to living players
-  const queue = MASTER_NIGHT_ORDER.filter((role) => livingRoles.has(role));
+  // Deduplicate this list (so if there are multiple wolves, 'wolf' only appears once)
+  const deduplicatedActiveRoles = Array.from(new Set(livingPlayerRoles));
+
+  // Filter MASTER_NIGHT_ORDER to only include roles that exist in the deduplicated active roles list
+  const queue = MASTER_NIGHT_ORDER.filter((role) => deduplicatedActiveRoles.includes(role));
 
   if (queue.length > 0) {
     const firstRole = queue.shift()!;
@@ -56,6 +61,7 @@ export function initializeNightPhase(state: GameState): void {
 
 /**
  * Evaluates night_actions when night_queue is empty.
+ * Resolves wolf kills (unanimous or random selection for split votes).
  * Implements strict resolution order:
  * 1. Queue wolf_kill victim.
  * 2. If doctor_save matches victim, cancel kill.
@@ -69,10 +75,25 @@ export function resolveDaybreak(state: GameState): void {
   const doctorAction = actions['doctor'];
   const witchAction = actions['witch'];
 
-  const wolfKillVictimId: string | undefined =
-    actions.wolf_kill ||
-    wolfAction?.target_socket_id ||
-    (typeof wolfAction === 'string' ? wolfAction : undefined);
+  // 1. Resolve wolf kill target from wolf_kills array (unanimous or random choice for split votes)
+  let wolfKillVictimId: string | undefined = undefined;
+  const wolfKills: string[] = actions.wolf_kills || [];
+
+  if (wolfKills.length > 0) {
+    const isUnanimous = wolfKills.every((target) => target === wolfKills[0]);
+    if (isUnanimous) {
+      wolfKillVictimId = wolfKills[0];
+    } else {
+      // Split vote: randomly select the final victim
+      const randomIndex = Math.floor(Math.random() * wolfKills.length);
+      wolfKillVictimId = wolfKills[randomIndex];
+    }
+  } else {
+    wolfKillVictimId =
+      actions.wolf_kill ||
+      wolfAction?.target_socket_id ||
+      (typeof wolfAction === 'string' ? wolfAction : undefined);
+  }
 
   const doctorSaveTargetId: string | undefined =
     actions.doctor_save ||
@@ -89,20 +110,20 @@ export function resolveDaybreak(state: GameState): void {
     witchAction?.poison_target ||
     (witchAction?.action_type === 'poison' ? witchAction?.target_socket_id : undefined);
 
-  // 1. First, queue the wolf_kill victim.
+  // Queue the wolf_kill victim
   let queuedWolfVictim: string | null = wolfKillVictimId || null;
 
-  // 2. Second, if doctor_save matches the victim, cancel the kill.
+  // If doctor_save matches the victim, cancel the kill
   if (queuedWolfVictim && doctorSaveTargetId && queuedWolfVictim === doctorSaveTargetId) {
     queuedWolfVictim = null;
   }
 
-  // 3. Third, if witch_heal matches the victim, cancel the kill.
+  // If witch_heal matches the victim, cancel the kill
   if (queuedWolfVictim && witchHealTargetId && queuedWolfVictim === witchHealTargetId) {
     queuedWolfVictim = null;
   }
 
-  // 4. Fourth, if witch_poison exists, add that target to the final kill list.
+  // If witch_poison exists, add that target to the final kill list
   const finalKillList: string[] = [];
   if (queuedWolfVictim) {
     finalKillList.push(queuedWolfVictim);
@@ -111,7 +132,7 @@ export function resolveDaybreak(state: GameState): void {
     finalKillList.push(witchPoisonTargetId);
   }
 
-  // Finally, mark all final victims as is_alive: false.
+  // Finally, mark all final victims as is_alive: false
   const killedNames: string[] = [];
   finalKillList.forEach((targetSocketId) => {
     const victim = state.players.find((p) => p.socket_id === targetSocketId);
@@ -123,7 +144,7 @@ export function resolveDaybreak(state: GameState): void {
     }
   });
 
-  // 5. Resolve Cupid Lovers (if one lover died, the other dies too)
+  // Resolve Cupid Lovers (if one lover died, the other dies too)
   const deadLovers = state.players.filter((p) => !p.is_alive && p.is_lover);
   if (deadLovers.length > 0) {
     state.players.forEach((p) => {
@@ -162,7 +183,11 @@ export function resolveDaybreak(state: GameState): void {
  */
 export function broadcastGameState(io: Server, state: GameState): void {
   const socketRoom = getSocketRoomName(state.room_code);
-  const wolfKill = state.night_actions?.wolf_kill || state.night_actions?.['wolf']?.target_socket_id;
+  const wolfKill =
+    state.night_actions?.wolf_kill ||
+    (state.night_actions?.wolf_kills && state.night_actions.wolf_kills.length > 0
+      ? state.night_actions.wolf_kills[0]
+      : state.night_actions?.['wolf']?.target_socket_id);
 
   if (wolfKill && (!state.night_actions || !state.night_actions.wolf_kill)) {
     state.night_actions = state.night_actions || {};
@@ -191,19 +216,23 @@ export function broadcastGameState(io: Server, state: GameState): void {
 
 /**
  * Handles a single night action submission from a player.
+ * For multiple wolves, collects votes in night_actions.wolf_kills = [target_1, target_2]
+ * and waits until all living wolves have submitted before advancing night_queue.
  * Validates Witch payload against persistent role_states inventory,
- * records actions into state.night_actions, pops next role from night_queue,
- * and advances game.
+ * records actions into state.night_actions, pops next role from night_queue, and advances game.
  */
 export async function handleNightAction(
   state: GameState,
   role: RoleType,
   payload: NightActionPayload,
-  io: Server
+  io: Server,
+  senderSocketId?: string
 ): Promise<GameState> {
   if (!state.night_actions) {
     state.night_actions = {};
   }
+
+  const senderId = senderSocketId || payload.sender_socket_id || payload.socket_id;
 
   // Handle Witch role action & inventory validation
   if (role === 'witch') {
@@ -247,10 +276,36 @@ export async function handleNightAction(
       state.night_actions.witch_poison = validPoisonTarget;
     }
   } else if (role === 'wolf') {
-    state.night_actions['wolf'] = payload;
+    state.night_actions.wolf_votes = state.night_actions.wolf_votes || {};
     const wolfTarget = payload.target_socket_id || payload.target_socket_ids?.[0] || payload.wolf_kill;
-    if (wolfTarget) {
-      state.night_actions.wolf_kill = wolfTarget;
+
+    if (senderId && wolfTarget) {
+      state.night_actions.wolf_votes[senderId] = wolfTarget;
+    } else if (wolfTarget) {
+      const fallbackKey = `wolf_${Object.keys(state.night_actions.wolf_votes).length}`;
+      state.night_actions.wolf_votes[fallbackKey] = wolfTarget;
+    }
+
+    // Store their actions in an array night_actions.wolf_kills = [target_1, target_2]
+    state.night_actions.wolf_kills = Object.values(state.night_actions.wolf_votes);
+    state.night_actions['wolf'] = payload;
+
+    // Check if all living wolves have submitted their action
+    const livingWolves = state.players.filter((p) => p.role === 'wolf' && p.is_alive);
+    const submittedCount = Object.keys(state.night_actions.wolf_votes).filter((voterId) =>
+      livingWolves.some((w) => w.socket_id === voterId)
+    ).length;
+
+    // If there are multiple living wolves and not all have submitted yet, wait
+    if (livingWolves.length > 1 && submittedCount < livingWolves.length) {
+      await saveGameState(state, ROOM_TTL_SECONDS);
+      broadcastGameState(io, state);
+      return state;
+    }
+
+    // If all living wolves voted, populate wolf_kill
+    if (state.night_actions.wolf_kills.length > 0) {
+      state.night_actions.wolf_kill = state.night_actions.wolf_kills[0];
     }
   } else if (role === 'doctor') {
     state.night_actions['doctor'] = payload;

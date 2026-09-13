@@ -52,6 +52,29 @@ export interface NightActionPayload {
   [key: string]: any;
 }
 
+export interface RoleSettings {
+  wolf: number;
+  seer: number;
+  doctor: number;
+  witch: number;
+  hunter: number;
+  cupid: number;
+  bear_tamer: number;
+  villager: number;
+  [key: string]: number;
+}
+
+export const DEFAULT_ROLE_SETTINGS: RoleSettings = {
+  wolf: 1,
+  seer: 1,
+  doctor: 1,
+  witch: 1,
+  hunter: 1,
+  cupid: 1,
+  bear_tamer: 1,
+  villager: 1
+};
+
 export interface GameState {
   room_code: string;
   phase: GamePhase;
@@ -61,6 +84,7 @@ export interface GameState {
   night_queue?: RoleType[];
   night_actions?: Record<string, any>;
   role_states?: RoleStates;
+  role_settings?: RoleSettings;
   players: Player[];
   last_night_killed?: string | null;
   last_day_eliminated?: string | null;

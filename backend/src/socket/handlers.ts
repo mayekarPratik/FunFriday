@@ -1,5 +1,13 @@
 import { Server, Socket } from 'socket.io';
-import { GameState, JoinRoomPayload, Player, RoleType, NightActionPayload } from '../types/game';
+import {
+  GameState,
+  JoinRoomPayload,
+  Player,
+  RoleType,
+  NightActionPayload,
+  RoleSettings,
+  DEFAULT_ROLE_SETTINGS
+} from '../types/game';
 import {
   createUniqueRoomCode,
   getGameState,
@@ -48,6 +56,7 @@ export function registerSocketHandlers(io: Server): void {
               has_poison: true
             }
           },
+          role_settings: { ...DEFAULT_ROLE_SETTINGS },
           players: [],
           votes: {},
           last_night_killed: null,
@@ -81,6 +90,41 @@ export function registerSocketHandlers(io: Server): void {
         } else {
           socket.emit('error', { message: error.message || 'Failed to create room' });
         }
+      }
+    });
+
+    /**
+     * Handler for 'update_settings'
+     * Updates customizable deck role counts in GameState
+     */
+    socket.on('update_settings', async (payload: { room_code?: string; role_settings: RoleSettings }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+        if (!roomCode) throw new Error('Room code not found');
+
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error(`Room '${roomCode}' not found`);
+
+        if (state.host_socket_id !== socket.id) {
+          throw new Error('Only the host can update room settings');
+        }
+
+        state.role_settings = payload.role_settings;
+        await saveGameState(state, ROOM_TTL_SECONDS);
+        broadcastGameState(io, state);
+
+        if (typeof callback === 'function') callback({ success: true, state });
+      } catch (error: any) {
+        console.error('[update_settings error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
       }
     });
 
@@ -155,7 +199,8 @@ export function registerSocketHandlers(io: Server): void {
 
     /**
      * Handler for 'start_game'
-     * Assigns roles according to party size, shifts to night, and initializes night queue & role states
+     * Reads custom role_settings from Redis, generates flat deck, randomizes with Fisher-Yates shuffle,
+     * assigns roles to players, shifts to night phase, saves to Redis, and broadcasts state.
      */
     socket.on('start_game', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
       try {
@@ -185,23 +230,31 @@ export function registerSocketHandlers(io: Server): void {
           throw new Error('At least 3 players are required to start the game');
         }
 
-        const playerIndices = shuffleArray(state.players.map((_, i) => i));
-        
-        // Distribution of roles based on player count
-        const availableRoles: RoleType[] = ['wolf', 'seer', 'doctor', 'witch', 'cupid'];
-        const rolesToAssign: RoleType[] = availableRoles.slice(0, Math.min(availableRoles.length, state.players.length - 1));
-        
-        state.players.forEach((p) => {
-          p.role = 'villager';
-          p.is_alive = true;
-          p.is_lover = false;
+        // 1. Read custom role_settings from Redis state (or fallback to defaults)
+        const roleSettings: RoleSettings = state.role_settings || { ...DEFAULT_ROLE_SETTINGS };
+
+        // 2. Generate flat array of roles based on counts (e.g. { wolf: 2, villager: 3 } -> ['wolf', 'wolf', 'villager', 'villager', 'villager'])
+        const deck: RoleType[] = [];
+        Object.entries(roleSettings).forEach(([role, count]) => {
+          const roleCount = Math.max(0, Number(count) || 0);
+          for (let i = 0; i < roleCount; i++) {
+            deck.push(role as RoleType);
+          }
         });
 
-        rolesToAssign.forEach((role, idx) => {
-          if (idx < playerIndices.length) {
-            const targetPlayerIdx = playerIndices[idx];
-            state.players[targetPlayerIdx].role = role;
-          }
+        // Validate that roles in deck match the number of players joined
+        if (deck.length !== state.players.length) {
+          throw new Error(`Roles in deck (${deck.length}) must match players joined (${state.players.length})`);
+        }
+
+        // 3. Use Fisher-Yates shuffle to randomize the deck
+        const shuffledDeck = shuffleArray(deck);
+
+        // 4. Iterate through state.players array and assign one role from shuffled deck to each player
+        state.players.forEach((player, idx) => {
+          player.role = shuffledDeck[idx];
+          player.is_alive = true;
+          player.is_lover = false;
         });
 
         // Initialize role states (Witch starts with heal and poison potions)
@@ -212,13 +265,15 @@ export function registerSocketHandlers(io: Server): void {
           }
         };
 
-        // Initialize Night phase via game engine
+        // 5. Change phase to 'night' and populate night queue
         initializeNightPhase(state);
 
+        // 6. Save updated players & state to Redis
         await saveGameState(state, ROOM_TTL_SECONDS);
 
+        // 7. Broadcast state update to room and players
         const socketRoom = getSocketRoomName(roomCode);
-        console.log(`[Game Started] Room ${roomCode} -> Roles:`, state.players.map(p => `${p.name}: ${p.role}`));
+        console.log(`[Game Started] Room ${roomCode} -> Roles assigned:`, state.players.map(p => `${p.name}: ${p.role}`));
         broadcastGameState(io, state);
 
         if (typeof callback === 'function') {
@@ -264,10 +319,11 @@ export function registerSocketHandlers(io: Server): void {
           action_type: payload.action_type,
           heal_target: payload.heal_target,
           poison_target: payload.poison_target,
+          sender_socket_id: socket.id,
           ...payload
         };
 
-        const updatedState = await handleNightAction(state, playerRole, actionPayload, io);
+        const updatedState = await handleNightAction(state, playerRole, actionPayload, io, socket.id);
 
         if (typeof callback === 'function') callback({ success: true, state: updatedState });
       } catch (error: any) {
