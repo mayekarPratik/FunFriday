@@ -11,7 +11,8 @@ import {
   handleNightAction,
   resolveDaybreak,
   evaluateWinConditions,
-  getSocketRoomName
+  getSocketRoomName,
+  broadcastGameState
 } from '../game/engine';
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -41,6 +42,12 @@ export function registerSocketHandlers(io: Server): void {
           active_role: null,
           night_queue: [],
           night_actions: {},
+          role_states: {
+            witch: {
+              has_heal: true,
+              has_poison: true
+            }
+          },
           players: [],
           votes: {},
           last_night_killed: null,
@@ -55,7 +62,7 @@ export function registerSocketHandlers(io: Server): void {
         await socket.join(socketRoom);
 
         console.log(`[Room Created] Code: ${roomCode} by Host: ${socket.id}`);
-        io.to(socketRoom).emit('game_state_update', initialState);
+        broadcastGameState(io, initialState);
 
         if (typeof callback === 'function') {
           callback({
@@ -125,7 +132,7 @@ export function registerSocketHandlers(io: Server): void {
         await socket.join(socketRoom);
 
         console.log(`[Player Joined] ${name} (${socket.id}) -> Room: ${normalizedCode}`);
-        io.to(socketRoom).emit('game_state_update', state);
+        broadcastGameState(io, state);
 
         if (typeof callback === 'function') {
           callback({
@@ -148,7 +155,7 @@ export function registerSocketHandlers(io: Server): void {
 
     /**
      * Handler for 'start_game'
-     * Assigns roles according to party size, shifts to night, and initializes night queue
+     * Assigns roles according to party size, shifts to night, and initializes night queue & role states
      */
     socket.on('start_game', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
       try {
@@ -197,6 +204,14 @@ export function registerSocketHandlers(io: Server): void {
           }
         });
 
+        // Initialize role states (Witch starts with heal and poison potions)
+        state.role_states = {
+          witch: {
+            has_heal: true,
+            has_poison: true
+          }
+        };
+
         // Initialize Night phase via game engine
         initializeNightPhase(state);
 
@@ -204,7 +219,7 @@ export function registerSocketHandlers(io: Server): void {
 
         const socketRoom = getSocketRoomName(roomCode);
         console.log(`[Game Started] Room ${roomCode} -> Roles:`, state.players.map(p => `${p.name}: ${p.role}`));
-        io.to(socketRoom).emit('game_state_update', state);
+        broadcastGameState(io, state);
 
         if (typeof callback === 'function') {
           callback({ success: true, state });
@@ -223,7 +238,7 @@ export function registerSocketHandlers(io: Server): void {
      * Handler for 'submit_action' & 'night_action'
      * Handled by game engine handleNightAction
      */
-    const onNightAction = async (payload: { room_code?: string; target_socket_id?: string; [key: string]: any }, callback?: (response: any) => void) => {
+    const onNightAction = async (payload: { room_code?: string; target_socket_id?: string; heal_target?: string; poison_target?: string; [key: string]: any }, callback?: (response: any) => void) => {
       try {
         let roomCode = payload?.room_code?.toUpperCase();
         if (!roomCode) {
@@ -246,7 +261,10 @@ export function registerSocketHandlers(io: Server): void {
         const actionPayload: NightActionPayload = {
           target_socket_id: payload.target_socket_id,
           target_socket_ids: payload.target_socket_ids,
-          action_type: payload.action_type
+          action_type: payload.action_type,
+          heal_target: payload.heal_target,
+          poison_target: payload.poison_target,
+          ...payload
         };
 
         const updatedState = await handleNightAction(state, playerRole, actionPayload, io);
@@ -282,8 +300,7 @@ export function registerSocketHandlers(io: Server): void {
         resolveDaybreak(state);
 
         await saveGameState(state, ROOM_TTL_SECONDS);
-        const socketRoom = getSocketRoomName(roomCode);
-        io.to(socketRoom).emit('game_state_update', state);
+        broadcastGameState(io, state);
 
         if (typeof callback === 'function') callback({ success: true, state });
       } catch (error: any) {
@@ -346,8 +363,7 @@ export function registerSocketHandlers(io: Server): void {
       }
 
       await saveGameState(state, ROOM_TTL_SECONDS);
-      const socketRoom = getSocketRoomName(roomCode);
-      io.to(socketRoom).emit('game_state_update', state);
+      broadcastGameState(io, state);
     };
 
     /**
@@ -391,8 +407,7 @@ export function registerSocketHandlers(io: Server): void {
           await tallyAndAdvance(state, roomCode);
         } else {
           await saveGameState(state, ROOM_TTL_SECONDS);
-          const socketRoom = getSocketRoomName(roomCode);
-          io.to(socketRoom).emit('game_state_update', state);
+          broadcastGameState(io, state);
         }
 
         if (typeof callback === 'function') callback({ success: true, state });

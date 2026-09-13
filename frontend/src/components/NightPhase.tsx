@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { ROLE_PRIORITIES } from '../types/game';
 import { Moon, Eye, Shield, Crosshair, Skull, Sparkles, HeartPulse, CheckCircle2, Clock } from 'lucide-react';
+import { WitchAction } from '../views/roles/WitchAction';
 
 const REVEAL_DURATION_MS = 4000;
 
@@ -93,6 +94,11 @@ export const NightPhase: React.FC = () => {
   const isMyTurn =
     (gameState.active_role && gameState.active_role === myRole) ||
     (myPriority > 0 && gameState.active_role_priority === myPriority);
+
+  // If local player is the Witch and it is the Witch's active turn, render WitchAction
+  if (myRole === 'witch' && (gameState.active_role === 'witch' || isMyTurn)) {
+    return <WitchAction />;
+  }
 
   const otherAlivePlayers = gameState.players.filter(
     (p) => p.socket_id !== me.socket_id && p.is_alive

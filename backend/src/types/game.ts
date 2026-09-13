@@ -33,10 +33,22 @@ export interface Player {
   is_lover?: boolean;
 }
 
+export interface WitchRoleState {
+  has_heal: boolean;
+  has_poison: boolean;
+}
+
+export interface RoleStates {
+  witch?: WitchRoleState;
+  [key: string]: any;
+}
+
 export interface NightActionPayload {
   target_socket_id?: string;
   target_socket_ids?: string[]; // for cupid lovers
   action_type?: 'kill' | 'heal' | 'poison' | 'inspect' | 'link';
+  heal_target?: string | null;
+  poison_target?: string | null;
   [key: string]: any;
 }
 
@@ -47,7 +59,8 @@ export interface GameState {
   active_role_priority: number;
   active_role?: RoleType | null;
   night_queue?: RoleType[];
-  night_actions?: Record<string, NightActionPayload>; // keyed by role e.g. "wolf", "doctor", "witch", "seer", "cupid"
+  night_actions?: Record<string, any>; // keyed by role e.g. "wolf", "doctor", "witch", "seer", "cupid" or action keys like "wolf_kill"
+  role_states?: RoleStates;
   players: Player[];
   last_night_killed?: string | null;
   last_day_eliminated?: string | null;

@@ -56,8 +56,12 @@ export function initializeNightPhase(state: GameState): void {
 
 /**
  * Evaluates night_actions when night_queue is empty.
- * Cancels wolf kill if doctor saved the target, applies witch poison/heal, updates player deaths,
- * changes phase to 'day' (or 'game_over' if win conditions met), and clears actions object.
+ * Implements strict resolution order:
+ * 1. Queue wolf_kill victim.
+ * 2. If doctor_save matches victim, cancel kill.
+ * 3. If witch_heal matches victim, cancel kill.
+ * 4. If witch_poison exists, add to final kill list.
+ * 5. Mark all final victims as is_alive: false.
  */
 export function resolveDaybreak(state: GameState): void {
   const actions = state.night_actions || {};
@@ -65,38 +69,61 @@ export function resolveDaybreak(state: GameState): void {
   const doctorAction = actions['doctor'];
   const witchAction = actions['witch'];
 
-  const wolfTargetId = wolfAction?.target_socket_id;
-  const doctorTargetId = doctorAction?.target_socket_id;
-  const witchHealTargetId = witchAction?.action_type === 'heal' ? witchAction?.target_socket_id : undefined;
-  const witchPoisonTargetId = witchAction?.action_type === 'poison' ? witchAction?.target_socket_id : undefined;
+  const wolfKillVictimId: string | undefined =
+    actions.wolf_kill ||
+    wolfAction?.target_socket_id ||
+    (typeof wolfAction === 'string' ? wolfAction : undefined);
 
+  const doctorSaveTargetId: string | undefined =
+    actions.doctor_save ||
+    doctorAction?.target_socket_id ||
+    (typeof doctorAction === 'string' ? doctorAction : undefined);
+
+  const witchHealTargetId: string | undefined =
+    actions.witch_heal ||
+    witchAction?.heal_target ||
+    (witchAction?.action_type === 'heal' ? witchAction?.target_socket_id : undefined);
+
+  const witchPoisonTargetId: string | undefined =
+    actions.witch_poison ||
+    witchAction?.poison_target ||
+    (witchAction?.action_type === 'poison' ? witchAction?.target_socket_id : undefined);
+
+  // 1. First, queue the wolf_kill victim.
+  let queuedWolfVictim: string | null = wolfKillVictimId || null;
+
+  // 2. Second, if doctor_save matches the victim, cancel the kill.
+  if (queuedWolfVictim && doctorSaveTargetId && queuedWolfVictim === doctorSaveTargetId) {
+    queuedWolfVictim = null;
+  }
+
+  // 3. Third, if witch_heal matches the victim, cancel the kill.
+  if (queuedWolfVictim && witchHealTargetId && queuedWolfVictim === witchHealTargetId) {
+    queuedWolfVictim = null;
+  }
+
+  // 4. Fourth, if witch_poison exists, add that target to the final kill list.
+  const finalKillList: string[] = [];
+  if (queuedWolfVictim) {
+    finalKillList.push(queuedWolfVictim);
+  }
+  if (witchPoisonTargetId && !finalKillList.includes(witchPoisonTargetId)) {
+    finalKillList.push(witchPoisonTargetId);
+  }
+
+  // Finally, mark all final victims as is_alive: false.
   const killedNames: string[] = [];
-
-  // 1. Resolve Wolf Attack
-  if (wolfTargetId) {
-    // Attack negated if protected by doctor or healed by witch
-    const isSaved = wolfTargetId === doctorTargetId || wolfTargetId === witchHealTargetId;
-    if (!isSaved) {
-      const victim = state.players.find((p) => p.socket_id === wolfTargetId);
-      if (victim && victim.is_alive) {
-        victim.is_alive = false;
+  finalKillList.forEach((targetSocketId) => {
+    const victim = state.players.find((p) => p.socket_id === targetSocketId);
+    if (victim && victim.is_alive) {
+      victim.is_alive = false;
+      if (!killedNames.includes(victim.name)) {
         killedNames.push(victim.name);
       }
     }
-  }
+  });
 
-  // 2. Resolve Witch Poison
-  if (witchPoisonTargetId) {
-    const poisonedVictim = state.players.find((p) => p.socket_id === witchPoisonTargetId);
-    if (poisonedVictim && poisonedVictim.is_alive) {
-      poisonedVictim.is_alive = false;
-      if (!killedNames.includes(poisonedVictim.name)) {
-        killedNames.push(poisonedVictim.name);
-      }
-    }
-  }
-
-  // 3. Resolve Cupid Lovers (if one lover died, the other dies too)
+  // 5. Resolve Cupid Lovers (if one lover died, the other dies too)
   const deadLovers = state.players.filter((p) => !p.is_alive && p.is_lover);
   if (deadLovers.length > 0) {
     state.players.forEach((p) => {
@@ -131,10 +158,42 @@ export function resolveDaybreak(state: GameState): void {
 }
 
 /**
+ * Broadcasts game state to room and ensures Witch receives night_actions.wolf_kill
+ */
+export function broadcastGameState(io: Server, state: GameState): void {
+  const socketRoom = getSocketRoomName(state.room_code);
+  const wolfKill = state.night_actions?.wolf_kill || state.night_actions?.['wolf']?.target_socket_id;
+
+  if (wolfKill && (!state.night_actions || !state.night_actions.wolf_kill)) {
+    state.night_actions = state.night_actions || {};
+    state.night_actions.wolf_kill = wolfKill;
+  }
+
+  io.to(socketRoom).emit('game_state_update', state);
+
+  // Ensure any connected Witch socket receives a payload with wolf_kill included
+  state.players.forEach((player) => {
+    if (player.role === 'witch') {
+      const witchSocket = io.sockets?.sockets?.get(player.socket_id);
+      if (witchSocket) {
+        const witchState: GameState = {
+          ...state,
+          night_actions: {
+            ...(state.night_actions || {}),
+            ...(wolfKill ? { wolf_kill: wolfKill } : {})
+          }
+        };
+        witchSocket.emit('game_state_update', witchState);
+      }
+    }
+  });
+}
+
+/**
  * Handles a single night action submission from a player.
- * Records payload into state.night_actions, pops the next role from night_queue,
- * and sets it as active_role. If queue is empty, calls resolveDaybreak.
- * Finally saves to Redis and broadcasts to room.
+ * Validates Witch payload against persistent role_states inventory,
+ * records actions into state.night_actions, pops next role from night_queue,
+ * and advances game.
  */
 export async function handleNightAction(
   state: GameState,
@@ -146,8 +205,62 @@ export async function handleNightAction(
     state.night_actions = {};
   }
 
-  // Record action payload
-  state.night_actions[role] = payload;
+  // Handle Witch role action & inventory validation
+  if (role === 'witch') {
+    if (!state.role_states) {
+      state.role_states = {};
+    }
+    if (!state.role_states.witch) {
+      state.role_states.witch = { has_heal: true, has_poison: true };
+    }
+
+    const healTarget = payload.heal_target || (payload.action_type === 'heal' ? payload.target_socket_id : undefined);
+    const poisonTarget = payload.poison_target || (payload.action_type === 'poison' ? payload.target_socket_id : undefined);
+
+    let validHealTarget: string | undefined = undefined;
+    let validPoisonTarget: string | undefined = undefined;
+
+    if (healTarget) {
+      if (state.role_states.witch.has_heal) {
+        validHealTarget = healTarget;
+        state.role_states.witch.has_heal = false;
+      }
+    }
+
+    if (poisonTarget) {
+      if (state.role_states.witch.has_poison) {
+        validPoisonTarget = poisonTarget;
+        state.role_states.witch.has_poison = false;
+      }
+    }
+
+    state.night_actions['witch'] = {
+      ...payload,
+      heal_target: validHealTarget || null,
+      poison_target: validPoisonTarget || null
+    };
+
+    if (validHealTarget) {
+      state.night_actions.witch_heal = validHealTarget;
+    }
+    if (validPoisonTarget) {
+      state.night_actions.witch_poison = validPoisonTarget;
+    }
+  } else if (role === 'wolf') {
+    state.night_actions['wolf'] = payload;
+    const wolfTarget = payload.target_socket_id || payload.target_socket_ids?.[0] || payload.wolf_kill;
+    if (wolfTarget) {
+      state.night_actions.wolf_kill = wolfTarget;
+    }
+  } else if (role === 'doctor') {
+    state.night_actions['doctor'] = payload;
+    const doctorTarget = payload.target_socket_id || payload.doctor_save;
+    if (doctorTarget) {
+      state.night_actions.doctor_save = doctorTarget;
+    }
+  } else {
+    state.night_actions[role] = payload;
+  }
 
   // If Cupid, link lovers
   if (role === 'cupid' && payload.target_socket_ids && payload.target_socket_ids.length === 2) {
@@ -174,9 +287,8 @@ export async function handleNightAction(
   // Save mutated state back to Redis
   await saveGameState(state, ROOM_TTL_SECONDS);
 
-  // Broadcast state to room
-  const socketRoom = getSocketRoomName(state.room_code);
-  io.to(socketRoom).emit('game_state_update', state);
+  // Broadcast state to room (with custom witch payload if applicable)
+  broadcastGameState(io, state);
 
   return state;
 }

@@ -32,7 +32,7 @@ interface GameStore {
   createRoom: () => Promise<CreateRoomResponse>;
   joinRoom: (payload: JoinRoomPayload) => Promise<JoinRoomResponse>;
   startGame: () => Promise<StartGameResponse>;
-  submitNightAction: (targetSocketId: string) => void;
+  submitNightAction: (payloadOrTarget: string | { target_socket_id?: string; heal_target?: string | null; poison_target?: string | null; [key: string]: any }) => void;
   advanceNightPriority: (priority?: number) => void;
   resolveNightToDay: () => void;
   submitVote: (targetSocketId: string) => void;
@@ -208,17 +208,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  submitNightAction: (targetSocketId: string) => {
+  submitNightAction: (payloadOrTarget: string | { target_socket_id?: string; heal_target?: string | null; poison_target?: string | null; [key: string]: any }) => {
     const { socket, gameState } = get();
     if (socket && gameState) {
-      socket.emit('submit_action', {
-        room_code: gameState.room_code,
-        target_socket_id: targetSocketId
-      });
-      socket.emit('night_action', {
-        room_code: gameState.room_code,
-        target_socket_id: targetSocketId
-      });
+      const payload = typeof payloadOrTarget === 'string'
+        ? { room_code: gameState.room_code, target_socket_id: payloadOrTarget }
+        : { room_code: gameState.room_code, ...payloadOrTarget };
+      socket.emit('submit_action', payload);
+      socket.emit('night_action', payload);
     }
   },
 
