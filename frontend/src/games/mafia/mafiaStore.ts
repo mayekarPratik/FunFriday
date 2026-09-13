@@ -79,8 +79,8 @@ const DEFAULT_STATE = {
   timeLeft: 0,
   timerEndsAt: null as number | null,
   settings: {
-    nightDuration: 45,
-    dayDuration: 120
+    nightDuration: 75,
+    dayDuration: 300
   },
   nightEvents: [] as string[],
   recentElimination: null as RecentElimination | null,

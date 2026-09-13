@@ -16,7 +16,8 @@ import {
   FastForward,
   Sliders,
   Sparkles,
-  Zap
+  Zap,
+  ArrowLeft
 } from 'lucide-react';
 
 export const MafiaHost: React.FC = () => {
@@ -37,7 +38,7 @@ export const MafiaHost: React.FC = () => {
     hostRestartGame
   } = useMafiaStore();
 
-  const { roomCode, players: corePlayers } = useCoreStore();
+  const { roomCode, players: corePlayers, setCurrentGameId } = useCoreStore();
 
   const activePlayers = mafiaPlayers.length > 0 ? mafiaPlayers : (corePlayers as any[]);
   const livingPlayers = activePlayers.filter((p) => p.is_alive !== false);
@@ -150,7 +151,15 @@ export const MafiaHost: React.FC = () => {
       {/* Top Banner */}
       <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-[#12141C]/80 border border-[#1F2430] shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#191C28] border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-lg">
+          <button
+            onClick={() => setCurrentGameId(null)}
+            className="w-10 h-10 rounded-xl bg-[#090A0F] border border-[#1F2430] hover:border-amber-500 flex items-center justify-center text-[#94A3B8] hover:text-white transition cursor-pointer shrink-0"
+            title="Back to The Lobby"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <div className="w-12 h-12 rounded-xl bg-[#191C28] border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-lg shrink-0">
             <Flame className="w-6 h-6" />
           </div>
           <div>
@@ -282,7 +291,7 @@ export const MafiaHost: React.FC = () => {
               <input
                 type="range"
                 min="15"
-                max="120"
+                max="180"
                 step="5"
                 value={settings.nightDuration}
                 onChange={(e) => updateSettings({ nightDuration: Number(e.target.value) })}
@@ -290,8 +299,8 @@ export const MafiaHost: React.FC = () => {
               />
               <div className="flex justify-between text-[10px] font-mono text-[#64748B]">
                 <span>15s (Fast)</span>
-                <span>45s (Default)</span>
-                <span>120s (Slow)</span>
+                <span>75s (Default)</span>
+                <span>180s (Slow)</span>
               </div>
             </div>
 
@@ -309,16 +318,16 @@ export const MafiaHost: React.FC = () => {
               <input
                 type="range"
                 min="30"
-                max="300"
+                max="600"
                 step="15"
                 value={settings.dayDuration}
                 onChange={(e) => updateSettings({ dayDuration: Number(e.target.value) })}
                 className="w-full accent-amber-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
               />
               <div className="flex justify-between text-[10px] font-mono text-[#64748B]">
-                <span>30s (Blitz)</span>
-                <span>120s (Default)</span>
-                <span>300s (Extended)</span>
+                <span>60s (Blitz)</span>
+                <span>300s (Default)</span>
+                <span>600s (Extended)</span>
               </div>
             </div>
           </div>

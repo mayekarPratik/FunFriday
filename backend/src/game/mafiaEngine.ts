@@ -164,9 +164,9 @@ export async function transitionToMafiaDay(io: Server, roomCode: string) {
     return;
   }
 
-  // Set phase to DAY with configured duration (default 120s)
+  // Set phase to DAY with configured duration (default 300s)
   mState.phase = 'DAY';
-  const daySeconds = mState.settings?.dayDuration || 120;
+  const daySeconds = mState.settings?.dayDuration || 300;
   mState.timeLeft = daySeconds;
   mState.timer_ends_at = Date.now() + daySeconds * 1000;
 
@@ -211,7 +211,7 @@ export async function transitionToMafiaNight(io: Server, roomCode: string) {
   mState.phase = 'NIGHT';
   mState.votes = {};
   mState.night_actions = {};
-  const nightSeconds = mState.settings?.nightDuration || 45;
+  const nightSeconds = mState.settings?.nightDuration || 75;
   mState.timeLeft = nightSeconds;
   mState.timer_ends_at = Date.now() + nightSeconds * 1000;
 
@@ -336,8 +336,8 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
           throw new Error('At least 3 players are required to start Mafia');
         }
 
-        const nightDuration = Math.max(10, Math.min(180, Number(payload.nightDuration || payload.settings?.nightDuration || 45)));
-        const dayDuration = Math.max(15, Math.min(600, Number(payload.dayDuration || payload.settings?.dayDuration || 120)));
+        const nightDuration = Math.max(10, Math.min(300, Number(payload.nightDuration || payload.settings?.nightDuration || 75)));
+        const dayDuration = Math.max(15, Math.min(600, Number(payload.dayDuration || payload.settings?.dayDuration || 300)));
 
         // Assign Roles:
         // 3-4 players: 1 Mafia, 1 Doctor, rest Citizens (or 1 Detective if >= 4)
