@@ -20,54 +20,66 @@ interface Particle {
   ease: number;
 }
 
-// Strict, recognizable SVG Path2D outline for Howling Werewolf
+// Strict, detailed SVG Path2D outline for Howling Werewolf
 const WOLF_PATH_SVG = new Path2D(
-  // Detailed howling wolf silhouette profile (ears, snout, teeth, neck, chest, haunches, tail)
-  'M 4 28 ' +
-  'L 6 22 ' +
-  'C 5.2 19.5 4.8 17 5.2 14.5 ' +
-  'C 5.8 12.2 7 10.2 8.5 8.5 ' +
-  'C 7.8 7 7.2 5.5 7 4 ' +
-  'L 5.5 1 ' +
-  'L 10 3.5 ' +
-  'C 11.2 2.5 12.8 1.8 14.5 1.2 ' +
-  'L 14 -1.5 ' +
-  'L 17.5 0.5 ' +
-  'C 19.2 1 21 1.8 22.8 2.8 ' +
-  'C 24.5 3.8 25.8 5.2 26.8 7 ' +
-  'L 31 4.5 ' +
-  'L 27.5 9.5 ' +
-  'C 28.5 12 28.2 14.8 26.8 17.2 ' +
-  'C 25 20.8 21.2 23.8 16.5 25 ' +
-  'L 16.5 28 ' +
-  'L 12 28 ' +
-  'L 12.2 25.8 ' +
-  'C 9.5 26 7 25.5 4 28 Z ' +
-  // Moon ring framing the howl
-  'M 18 -2 A 12 12 0 1 0 30 10 A 12 12 0 0 0 18 -2 Z'
+  // Majestic howling werewolf silhouette profile (snout, ears, nape fur, chest, haunches, tail, ground)
+  'M 18.5 2.5 ' + // Snout tip pointing up-right
+  'L 17.2 4.2 ' +
+  'C 16.5 3.5 15.2 3 13.8 2.8 ' +
+  'L 14.5 0.5 ' + // Front ear tip
+  'L 12.2 2.6 ' +
+  'L 10.8 1.2 ' + // Back ear tip
+  'L 9.5 3.2 ' +
+  'C 8.2 4.5 7.2 6.2 6.5 8 ' + // Nape
+  'L 4.5 7.5 ' + // Mane tuft 1
+  'L 5.8 10 ' +
+  'L 3.5 10.5 ' + // Mane tuft 2
+  'L 5.2 13 ' +
+  'L 3 14 ' + // Mane tuft 3
+  'L 5.5 16.5 ' +
+  'C 4.8 19 4.5 21.5 5 24 ' + // Back curve to haunches
+  'C 4 25.5 3 27 2 28.5 ' + // Tail
+  'C 4 29 6.5 28.5 8.5 27.2 ' +
+  'L 9.5 28.5 ' + // Back paw/base
+  'L 13 28.5 ' +
+  'L 12.5 25.5 ' +
+  'C 13.8 25 15 24 16 22.8 ' +
+  'L 18.5 28.5 ' + // Front paw
+  'L 21.5 28.5 ' +
+  'L 19.5 24 ' + // Foreleg
+  'C 20.8 21.5 21.5 18.5 21.2 15.5 ' + // Muscular chest
+  'C 20.8 13 19.8 10.8 18.2 9 ' + // Throat
+  'L 20.5 7.2 ' + // Open lower jaw
+  'L 17.5 7 ' + // Throat cleft
+  'L 19.8 4.8 ' + // Upper jaw
+  'Z ' +
+  // Majestic Crescent Moon outline encircling the howl
+  'M 16 -1 A 14 14 0 1 0 30 13 A 11 11 0 1 1 16 -1 Z'
 );
+const WOLF_BOUNDS = { minX: 2, minY: -1, maxX: 30, maxY: 29 };
 
-// Strict, recognizable SVG Path2D outline for Mafia Fedora & Sunglasses
+// Strict, recognizable SVG Path2D outline for Mafia Fedora, Glasses & Suit
 const MAFIA_PATH_SVG = new Path2D(
   // Fedora Crown with center crease
-  'M 4.5 9.5 C 6 5.5 8.5 4.2 12 5.5 C 15.5 4.2 18 5.5 19.5 9.5 L 20 12 L 4 12 Z ' +
-  // Hat Ribbon Band
-  'M 3.8 12 L 20.2 12 L 20.6 13.5 L 3.4 13.5 Z ' +
-  // Wide Curved Fedora Brim
-  'M 1 14 C 4.5 12.5 8 13.2 12 13.2 C 16 13.2 19.5 12.5 23 14 C 19.5 16.2 15 15.6 12 15.6 C 9 15.6 4.5 16.2 1 14 Z ' +
-  // Mafia Aviator Shades
-  'M 5.5 17.5 C 5.5 16.8 6.2 16.2 7 16.2 L 10 16.2 C 10.8 16.2 11.5 16.8 11.5 17.5 L 11 19.8 C 10.8 20.5 10.2 21 9.5 21 L 7.5 21 C 6.8 21 6.2 20.5 6 19.8 Z ' +
-  'M 12.5 17.5 C 12.5 16.8 13.2 16.2 14 16.2 L 17 16.2 C 17.8 16.2 18.5 16.8 18.5 17.5 L 18 19.8 C 17.8 20.5 17.2 21 16.5 21 L 14.5 21 C 13.8 21 13.2 20.5 13 19.8 Z ' +
-  'M 11.5 17.5 L 12.5 17.5 ' +
+  'M 6 12 C 8 7 11.5 5.5 16 7 C 20.5 5.5 24 7 26 12 L 26.5 15 L 5.5 15 Z ' +
+  // Ribbon band
+  'M 5.2 15 L 26.8 15 L 27.2 16.8 L 4.8 16.8 Z ' +
+  // Wide Fedora Brim
+  'M 1.5 17.5 C 6 15.8 11 16.5 16 16.5 C 21 16.5 26 15.8 30.5 17.5 C 26 20.2 21 19.5 16 19.5 C 11 19.5 6 20.2 1.5 17.5 Z ' +
+  // Aviator Sunglasses
+  'M 7.5 21.5 C 7.5 20.5 8.5 19.8 9.5 19.8 L 13.5 19.8 C 14.5 19.8 15.5 20.5 15.5 21.5 L 14.8 24.2 C 14.5 25.2 13.8 25.8 12.8 25.8 L 10.2 25.8 C 9.2 25.8 8.5 25.2 8.2 24.2 Z ' +
+  'M 16.5 21.5 C 16.5 20.5 17.5 19.8 18.5 19.8 L 22.5 19.8 C 23.5 19.8 24.5 20.5 24.5 21.5 L 23.8 24.2 C 23.5 25.2 22.8 25.8 21.8 25.8 L 19.2 25.8 C 18.2 25.8 17.5 25.2 17.2 24.2 Z ' +
+  'M 15.5 21.5 L 16.5 21.5 ' +
   // Collar & Tie
-  'M 10.5 22 L 13.5 22 L 14.2 24.8 L 12 26.5 L 9.8 24.8 Z ' +
-  'M 7.2 22 L 10.5 22 L 8.8 25.2 Z ' +
-  'M 16.8 22 L 13.5 22 L 15.2 25.2 Z'
+  'M 14 27.2 L 18 27.2 L 18.8 30.5 L 16 32.5 L 13.2 30.5 Z ' +
+  'M 9.5 27.2 L 14 27.2 L 11.8 31 Z ' +
+  'M 22.5 27.2 L 18 27.2 L 20.2 31 Z'
 );
+const MAFIA_BOUNDS = { minX: 1.5, minY: 5.5, maxX: 30.5, maxY: 32.5 };
 
 /**
  * Helper function to generate shape perimeter pixel coordinates on an offscreen canvas.
- * Uses Stroke-Only rendering to ensure particles map strictly to the outer perimeter outlines.
+ * Offsets the drawing by its true bounding box center to ensure perfect vertical and horizontal centering.
  */
 function getShapeCoordinates(
   iconType: 'wolf' | 'mafia',
@@ -82,17 +94,28 @@ function getShapeCoordinates(
 
   ctx.clearRect(0, 0, width, height);
 
-  // Position on the left side with massive scaling
-  const cx = width < 1024 ? width * 0.45 : width * 0.22;
-  const cy = height * 0.34;
-  const scale = Math.min(width * 0.019, height * 0.026, 19);
+  // 1. Left-Center Positioning: 28% of screen width, 50% of screen height (vertical center)
+  const centerX = width < 1024 ? width * 0.5 : width * 0.28;
+  const centerY = height * 0.5;
+
+  const bounds = iconType === 'wolf' ? WOLF_BOUNDS : MAFIA_BOUNDS;
+  const shapeWidth = bounds.maxX - bounds.minX;
+  const shapeHeight = bounds.maxY - bounds.minY;
+  const shapeCenterX = bounds.minX + shapeWidth / 2;
+  const shapeCenterY = bounds.minY + shapeHeight / 2;
+
+  // Scale shape up to massive game-art scale (occupying ~55% of screen height)
+  const scale = Math.min((width * 0.42) / shapeWidth, (height * 0.58) / shapeHeight, 18);
 
   ctx.save();
-  ctx.translate(cx, cy);
+  // Translate to target screen position
+  ctx.translate(centerX, centerY);
   ctx.scale(scale, scale);
+  // Offset by half its width and height so it scales from its true center
+  ctx.translate(-shapeCenterX, -shapeCenterY);
 
-  // Stroke-Only rendering (thick perimeter line without filling)
-  ctx.lineWidth = 1.8 / scale;
+  // 3. Strict Outline Enforcement (Stroke-Only, NO ctx.fill())
+  ctx.lineWidth = 1.6 / scale;
   ctx.strokeStyle = '#ffffff';
 
   if (iconType === 'wolf') {
@@ -103,7 +126,7 @@ function getShapeCoordinates(
 
   ctx.restore();
 
-  // Extract pixel coordinates where alpha > 128 (perimeter outline only)
+  // Extract outline perimeter points
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
   const perimeterPoints: { x: number; y: number }[] = [];
@@ -217,8 +240,8 @@ export const InteractiveBackground: React.FC = () => {
       sortedParticles.forEach((p, index) => {
         const targetIdx = Math.floor((index / sortedParticles.length) * sortedTargets.length);
         const target = sortedTargets[targetIdx % sortedTargets.length];
-        p.targetX = target.x + (Math.random() - 0.5) * 2;
-        p.targetY = target.y + (Math.random() - 0.5) * 2;
+        p.targetX = target.x;
+        p.targetY = target.y;
         p.state = 'forming';
         // Gentle initial inertia damping for a fluid glide
         p.vx *= 0.5;
@@ -237,13 +260,13 @@ export const InteractiveBackground: React.FC = () => {
       });
     };
 
-    // State Machine Cycle (28 seconds total loop - 10s gap, 2s shape hold)
+    // State Machine Cycle (38 seconds total loop - 10s gap, 7s solid shape hold)
     // Phase 1 (0-10s): Drifting (10s gap)
-    // Phase 2 (10-14s): Wolf (forms & holds shape for 2s)
-    // Phase 3 (14-24s): Drifting (10s gap)
-    // Phase 4 (24-28s): Mafia (forms & holds shape for 2s)
+    // Phase 2 (10-19s): Wolf (forms in ~1.5s & holds shape solidly for 7.5s)
+    // Phase 3 (19-29s): Drifting (10s gap)
+    // Phase 4 (29-38s): Mafia (forms in ~1.5s & holds shape solidly for 7.5s)
     let lastPhase = -1;
-    const cycleDuration = 28000;
+    const cycleDuration = 38000;
     const startTime = performance.now();
 
     let time = 0;
@@ -257,12 +280,12 @@ export const InteractiveBackground: React.FC = () => {
         let currentPhase = 0;
         if (elapsed >= 0 && elapsed < 10000) {
           currentPhase = 1; // Phase 1: Drifting (10s gap)
-        } else if (elapsed >= 10000 && elapsed < 14000) {
-          currentPhase = 2; // Phase 2: Wolf (holds 2s)
-        } else if (elapsed >= 14000 && elapsed < 24000) {
+        } else if (elapsed >= 10000 && elapsed < 19000) {
+          currentPhase = 2; // Phase 2: Wolf (holds solidly ~7.5s)
+        } else if (elapsed >= 19000 && elapsed < 29000) {
           currentPhase = 3; // Phase 3: Drifting (10s gap)
         } else {
-          currentPhase = 4; // Phase 4: Mafia (holds 2s)
+          currentPhase = 4; // Phase 4: Mafia (holds solidly ~7.5s)
         }
 
         if (currentPhase !== lastPhase) {
@@ -278,9 +301,9 @@ export const InteractiveBackground: React.FC = () => {
 
         // Smoothly fade constellation lines in during forming phases, out during drifting
         if (currentPhase === 2 || currentPhase === 4) {
-          shapeOpacity = Math.min(1, shapeOpacity + 0.02);
+          shapeOpacity = Math.min(1, shapeOpacity + 0.025);
         } else {
-          shapeOpacity = Math.max(0, shapeOpacity - 0.015);
+          shapeOpacity = Math.max(0, shapeOpacity - 0.02);
         }
       } else {
         shapeOpacity = 0;
