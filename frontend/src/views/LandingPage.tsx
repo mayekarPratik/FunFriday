@@ -11,8 +11,6 @@ import {
   Monitor,
   Shield,
   Play,
-  Flame,
-  Radio,
   AlertCircle
 } from 'lucide-react';
 
@@ -38,10 +36,10 @@ export const LandingPage: React.FC = () => {
     clearErrors();
 
     const trimmedName = name.trim();
-    const cleanCode = roomCode.trim().toUpperCase();
+    const rawCode = roomCode.replace(/-/g, '').trim().toUpperCase();
 
-    if (!cleanCode || cleanCode.length !== 4) {
-      setLocalError('Room code must be 4 letters');
+    if (!rawCode || rawCode.length !== 4) {
+      setLocalError('Room code must be 4 letters/numbers');
       return;
     }
 
@@ -57,7 +55,7 @@ export const LandingPage: React.FC = () => {
 
     setLoading(true);
     const res = await joinRoom({
-      room_code: cleanCode,
+      room_code: rawCode,
       name: trimmedName
     });
     setLoading(false);
@@ -79,43 +77,42 @@ export const LandingPage: React.FC = () => {
     }
   };
 
+  const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalError(null);
+    const rawValue = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
+    const formattedValue = rawValue.split('').join('-');
+    setRoomCode(formattedValue);
+  };
+
   return (
-    <div className="min-h-screen w-full text-[#F8FAFC] flex flex-col justify-between p-4 sm:p-8 select-none relative overflow-hidden z-0">
-      {/* Background Ambience / Glow Elements */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#3B82F6]/10 blur-[130px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-600/5 blur-[100px] rounded-full pointer-events-none -z-10" />
+    <div className="min-h-screen w-full flex items-center justify-center lg:justify-end lg:pr-32 px-4 py-8 select-none relative z-0">
+      {/* Master Frosted Glass Card - Matching Host Dashboard */}
+      <div className="w-full max-w-md p-8 bg-gray-900/80 backdrop-blur-md border border-gray-700/50 rounded-2xl shadow-xl relative flex flex-col items-center text-center">
+        {/* Subtle interior glow */}
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#3B82F6]/15 blur-3xl rounded-full pointer-events-none -z-10" />
 
-      {/* Top Header Bar */}
-      <header className="w-full max-w-5xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#12141C] border border-[#1F2430] text-xs font-mono text-[#94A3B8]">
-          <Radio className="w-3.5 h-3.5 text-[#3B82F6] animate-pulse" />
-          <span>REALTIME ENGINE</span>
-        </div>
-
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#12141C] border border-[#1F2430] text-xs font-mono text-[#94A3B8]">
-          <Shield className="w-3.5 h-3.5 text-[#22C55E]" />
-          <span>OLED EDITION</span>
-        </div>
-      </header>
-
-      {/* Center Hero Card */}
-      <main className="w-full max-w-lg mx-auto my-auto flex flex-col items-center">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-[#12141C] border border-[#1F2430] flex items-center justify-center text-[#3B82F6] mb-4 shadow-xl relative group">
-            <Flame className="w-8 h-8 text-[#3B82F6] group-hover:scale-110 transition-transform duration-300" />
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-[#3B82F6] text-white text-[9px] font-mono font-bold uppercase tracking-wider">
-              LIVE
-            </span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#F8FAFC]">
+        {/* Title & Moon Icon Flex Container */}
+        <div className="w-full flex items-center justify-center lg:justify-start gap-4 mb-2">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className="w-10 h-10 text-white animate-moon-breathe shrink-0"
+          >
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <h1 className="text-4xl font-extrabold text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] tracking-tight text-left">
             FunFriday Games
           </h1>
-          <p className="text-xs sm:text-sm text-[#94A3B8] mt-1.5">
-            A Multiplayer Party Game • Created by Pratik Mayekar
-          </p>
         </div>
+
+        <p className="w-full text-gray-400 mt-1 mb-8 text-sm text-center lg:text-left">
+          A Multiplayer Party Game • Created by Pratik Mayekar
+        </p>
 
         {/* Sleek Segmented Pill Toggle */}
         <div className="flex p-1 bg-gray-900/90 rounded-full border border-gray-800 backdrop-blur-md mb-6 w-full max-w-xs shadow-inner">
@@ -164,39 +161,23 @@ export const LandingPage: React.FC = () => {
           </div>
         )}
 
-        {/* Dynamic Card for Mode */}
-        <div className="wope-card w-full p-6 sm:p-8 flex flex-col shadow-2xl relative overflow-hidden backdrop-blur-xl bg-[#12141C]/90 border-[#1F2430]">
-          {/* Subtle card glow */}
-          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#3B82F6]/10 blur-2xl rounded-full pointer-events-none" />
-
+        {/* Dynamic Form Content */}
+        <div className="w-full">
           {mode === 'join' ? (
             /* JOIN GAME FORM */
             <form onSubmit={handleJoin} className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-[#191C28] border border-[#1F2430] flex items-center justify-center text-[#3B82F6]">
-                  <Smartphone className="w-4 h-4" />
-                </div>
-                <div className="text-left">
-                  <h2 className="text-lg font-bold text-[#F8FAFC]">Join Game</h2>
-                  <p className="text-xs text-[#94A3B8]">Enter credentials to join on your device</p>
-                </div>
-              </div>
-
               {/* Room Code */}
               <div className="space-y-1.5 text-left">
-                <label className="text-xs font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-[#3B82F6]" /> Room Code
                 </label>
                 <input
                   type="text"
-                  maxLength={4}
+                  maxLength={7}
                   value={roomCode}
-                  onChange={(e) => {
-                    setLocalError(null);
-                    setRoomCode(e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4));
-                  }}
-                  placeholder="4-LETTER CODE"
-                  className="w-full h-12 px-4 rounded-lg bg-[#090A0F] border border-[#1F2430] text-[#F8FAFC] font-mono tracking-widest text-center text-lg font-bold uppercase placeholder:text-[#94A3B8]/30 focus:outline-none focus:border-[#3B82F6] transition"
+                  onChange={handleRoomCodeChange}
+                  placeholder="X-X-X-X"
+                  className="w-full h-12 px-4 text-center tracking-[0.25em] font-mono text-xl uppercase font-bold text-white bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg placeholder:text-gray-600 focus:outline-none transition"
                   required
                   autoFocus
                 />
@@ -204,7 +185,7 @@ export const LandingPage: React.FC = () => {
 
               {/* Player Name */}
               <div className="space-y-1.5 text-left">
-                <label className="text-xs font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
+                <label className="text-xs font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-[#3B82F6]" /> Player Name
                 </label>
                 <input
@@ -216,7 +197,7 @@ export const LandingPage: React.FC = () => {
                     setName(e.target.value.slice(0, 12));
                   }}
                   placeholder="Your nickname (max 12 chars)"
-                  className="w-full h-12 px-4 rounded-lg bg-[#090A0F] border border-[#1F2430] text-[#F8FAFC] text-sm focus:outline-none focus:border-[#3B82F6] transition placeholder:text-[#94A3B8]/30"
+                  className="w-full h-12 px-4 rounded-lg bg-gray-800/50 border border-gray-700 text-white text-sm focus:outline-none focus:border-blue-500 transition placeholder:text-gray-600"
                   required
                 />
               </div>
@@ -242,19 +223,19 @@ export const LandingPage: React.FC = () => {
             </form>
           ) : (
             /* HOST GAME VIEW */
-            <div className="flex flex-col items-center text-center space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-[#191C28] border border-[#1F2430] flex items-center justify-center text-[#3B82F6] shadow-inner">
+            <div className="flex flex-col items-center text-center space-y-5">
+              <div className="w-12 h-12 rounded-2xl bg-neutral-900/80 border border-white/10 flex items-center justify-center text-[#3B82F6] shadow-inner">
                 <Tv className="w-6 h-6" />
               </div>
 
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-mono uppercase font-semibold">
-                  <Sparkles className="w-3.5 h-3.5" /> Host Display Mode
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-[11px] font-mono uppercase font-semibold">
+                  <Sparkles className="w-3 h-3" /> Host Display Mode
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-[#F8FAFC]">
+                <h2 className="text-xl font-bold text-white">
                   Create a Game Room
                 </h2>
-                <p className="text-gray-400 text-sm text-center max-w-sm mx-auto">
+                <p className="text-gray-400 text-sm text-center max-w-xs mx-auto">
                   Create a new room. Display this screen on a TV or tablet for everyone to see.
                 </p>
               </div>
@@ -264,7 +245,7 @@ export const LandingPage: React.FC = () => {
                 type="button"
                 onClick={handleHost}
                 disabled={!isConnected || loading || isConnecting}
-                className="wope-btn-primary w-full h-13 text-sm font-semibold flex items-center justify-center gap-2.5 shadow-lg shadow-[#3B82F6]/25 hover:shadow-[#3B82F6]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="wope-btn-primary w-full h-12 text-sm font-semibold flex items-center justify-center gap-2.5 shadow-lg shadow-[#3B82F6]/25 hover:shadow-[#3B82F6]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {loading ? (
                   <>
@@ -280,31 +261,26 @@ export const LandingPage: React.FC = () => {
               </button>
 
               {/* Feature info footer */}
-              <div className="grid grid-cols-2 gap-3 w-full pt-4 border-t border-[#1F2430] text-left">
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#090A0F]/60 border border-[#1F2430]">
-                  <Monitor className="w-4 h-4 text-[#3B82F6] shrink-0 mt-0.5" />
+              <div className="grid grid-cols-2 gap-2.5 w-full pt-3 border-t border-white/10 text-left">
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-black/40 border border-white/5">
+                  <Monitor className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-[#F8FAFC]">Public Display</p>
-                    <p className="text-[11px] text-[#94A3B8]">Timer & Live Recaps</p>
+                    <p className="text-xs font-semibold text-white">Public Display</p>
+                    <p className="text-[10px] text-gray-400">Live timers & recaps</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#090A0F]/60 border border-[#1F2430]">
-                  <Shield className="w-4 h-4 text-[#22C55E] shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-black/40 border border-white/5">
+                  <Shield className="w-3.5 h-3.5 text-[#22C55E] shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-[#F8FAFC]">Zero Secret Leaks</p>
-                    <p className="text-[11px] text-[#94A3B8]">Private role actions</p>
+                    <p className="text-xs font-semibold text-white">Zero Leaks</p>
+                    <p className="text-[10px] text-gray-400">Private roles</p>
                   </div>
                 </div>
               </div>
             </div>
           )}
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="w-full max-w-5xl mx-auto py-4 text-center text-xs text-[#94A3B8]">
-        <span>A Multiplayer Party Game • Created by Pratik Mayekar</span>
-      </footer>
+      </div>
     </div>
   );
 };
