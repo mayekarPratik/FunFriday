@@ -33,28 +33,37 @@ export interface InvestigationResult {
   is_mafia: boolean;
 }
 
+export interface MafiaSettings {
+  nightDuration: number;
+  dayDuration: number;
+}
+
 export interface MafiaState {
   room_code: string;
   phase: MafiaPhase;
   players: MafiaPlayer[];
   timeLeft: number;
   timerEndsAt: number | null;
+  settings: MafiaSettings;
   nightEvents: string[];
   recentElimination: RecentElimination | null;
   winner: 'town' | 'mafia' | null;
   votes: Record<string, string>; // voter_socket_id -> target_socket_id
   myInvestigation: InvestigationResult | null;
   selectedActionTarget: string | null;
+  allActionsLocked: boolean;
   lastActionError: string | null;
 
   // Actions
   setMafiaState: (state: Partial<MafiaState>) => void;
+  updateSettings: (settings: Partial<MafiaSettings>) => void;
   syncFromBackend: (data: any) => void;
   getMyPlayer: () => MafiaPlayer | undefined;
-  startMafiaGame: () => Promise<{ success: boolean; error?: string }>;
+  startMafiaGame: (customSettings?: Partial<MafiaSettings>) => Promise<{ success: boolean; error?: string }>;
   submitNightAction: (targetSocketId: string) => void;
   investigatePlayer: (targetSocketId: string) => Promise<{ success: boolean; is_mafia?: boolean; error?: string }>;
   submitVote: (targetSocketId: string) => void;
+  forceEndPhase: () => void;
   hostAdvancePhase: () => void;
   hostRestartGame: () => void;
   clearErrors: () => void;
@@ -67,12 +76,17 @@ const DEFAULT_STATE = {
   players: [] as MafiaPlayer[],
   timeLeft: 0,
   timerEndsAt: null as number | null,
+  settings: {
+    nightDuration: 45,
+    dayDuration: 120
+  },
   nightEvents: [] as string[],
   recentElimination: null as RecentElimination | null,
   winner: null as 'town' | 'mafia' | null,
   votes: {} as Record<string, string>,
   myInvestigation: null as InvestigationResult | null,
   selectedActionTarget: null as string | null,
+  allActionsLocked: false,
   lastActionError: null as string | null
 };
 
@@ -81,11 +95,18 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
 
   setMafiaState: (updates) => set((state) => ({ ...state, ...updates })),
 
+  updateSettings: (newSettings) =>
+    set((state) => ({
+      settings: {
+        ...state.settings,
+        ...newSettings
+      }
+    })),
+
   syncFromBackend: (data: any) => {
     if (!data) return;
 
     set((state) => {
-      // If backend has mafiaState or data has players, prefer those, otherwise keep existing or fall back to coreStore
       const core = useCoreStore.getState();
       const updatedPlayers = data.players && data.players.length > 0
         ? data.players
@@ -97,10 +118,15 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
         players: updatedPlayers,
         timeLeft: data.timeLeft !== undefined ? data.timeLeft : (data.time_left !== undefined ? data.time_left : state.timeLeft),
         timerEndsAt: data.timer_ends_at !== undefined ? data.timer_ends_at : (data.timerEndsAt !== undefined ? data.timerEndsAt : state.timerEndsAt),
+        settings: {
+          nightDuration: data.settings?.nightDuration || state.settings.nightDuration,
+          dayDuration: data.settings?.dayDuration || state.settings.dayDuration
+        },
         nightEvents: data.night_events || data.nightEvents || state.nightEvents,
         recentElimination: data.recent_elimination !== undefined ? data.recent_elimination : (data.recentElimination !== undefined ? data.recentElimination : state.recentElimination),
         winner: data.winner !== undefined ? data.winner : state.winner,
         votes: data.votes || state.votes,
+        allActionsLocked: false, // Reset on new phase sync
         lastActionError: null
       };
     });
@@ -115,10 +141,11 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
     );
   },
 
-  startMafiaGame: async () => {
+  startMafiaGame: async (customSettings) => {
     const core = useCoreStore.getState();
     const roomCode = core.roomCode || get().room_code;
     const socket = core.socket;
+    const currentSettings = { ...get().settings, ...customSettings };
 
     if (!socket || !roomCode) {
       const error = 'Cannot start game: Socket disconnected or missing room code';
@@ -129,17 +156,27 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
     set({ lastActionError: null });
 
     return new Promise((resolve) => {
-      socket.emit('start_mafia_game', { room_code: roomCode, gameId: 'mafia' }, (res: any) => {
-        if (res && res.success) {
-          if (res.state) get().syncFromBackend(res.state);
-          set({ lastActionError: null });
-          resolve({ success: true });
-        } else {
-          const error = res?.error || 'Failed to start Mafia game';
-          set({ lastActionError: error });
-          resolve({ success: false, error });
+      socket.emit(
+        'start_mafia_game',
+        {
+          room_code: roomCode,
+          gameId: 'mafia',
+          nightDuration: currentSettings.nightDuration,
+          dayDuration: currentSettings.dayDuration,
+          settings: currentSettings
+        },
+        (res: any) => {
+          if (res && res.success) {
+            if (res.state) get().syncFromBackend(res.state);
+            set({ lastActionError: null });
+            resolve({ success: true });
+          } else {
+            const error = res?.error || 'Failed to start Mafia game';
+            set({ lastActionError: error });
+            resolve({ success: false, error });
+          }
         }
-      });
+      );
     });
   },
 
@@ -212,13 +249,22 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
     });
   },
 
+  forceEndPhase: () => {
+    const core = useCoreStore.getState();
+    const socket = core.socket;
+    const roomCode = core.roomCode || get().room_code;
+    if (!socket || !roomCode) return;
+
+    socket.emit('force_mafia_phase_end', { room_code: roomCode });
+  },
+
   hostAdvancePhase: () => {
     const core = useCoreStore.getState();
     const socket = core.socket;
     const roomCode = core.roomCode || get().room_code;
     if (!socket || !roomCode) return;
 
-    socket.emit('mafia_advance_phase', { room_code: roomCode });
+    socket.emit('force_mafia_phase_end', { room_code: roomCode });
   },
 
   hostRestartGame: () => {

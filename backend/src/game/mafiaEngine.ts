@@ -20,12 +20,18 @@ export interface MafiaPlayerData {
   is_alive: boolean;
 }
 
+export interface MafiaSettings {
+  nightDuration: number;
+  dayDuration: number;
+}
+
 export interface MafiaGameRoomState {
   room_code: string;
   phase: MafiaPhase;
   players: MafiaPlayerData[];
   timeLeft: number;
   timer_ends_at: number | null;
+  settings: MafiaSettings;
   night_events: string[];
   recent_elimination: {
     name: string;
@@ -93,6 +99,25 @@ function checkMafiaWin(players: MafiaPlayerData[]): 'town' | 'mafia' | null {
 }
 
 /**
+ * Check if all active night roles have submitted their night actions
+ */
+function checkAllNightActionsLocked(mState: MafiaGameRoomState): boolean {
+  if (mState.phase !== 'NIGHT') return false;
+
+  const livingMafia = mState.players.some((p) => p.is_alive && p.role === 'mafia');
+  const livingDoctor = mState.players.some((p) => p.is_alive && p.role === 'doctor');
+  const livingDetective = mState.players.some((p) => p.is_alive && p.role === 'detective');
+
+  const actions = mState.night_actions || {};
+
+  if (livingMafia && !actions.mafia) return false;
+  if (livingDoctor && !actions.doctor) return false;
+  if (livingDetective && !actions.detective) return false;
+
+  return true;
+}
+
+/**
  * Transition into DAY phase after resolving night kills
  */
 export async function transitionToMafiaDay(io: Server, roomCode: string) {
@@ -139,9 +164,9 @@ export async function transitionToMafiaDay(io: Server, roomCode: string) {
     return;
   }
 
-  // Set phase to DAY with 60s discussion/voting timer
+  // Set phase to DAY with configured duration (default 120s)
   mState.phase = 'DAY';
-  const daySeconds = 45;
+  const daySeconds = mState.settings?.dayDuration || 120;
   mState.timeLeft = daySeconds;
   mState.timer_ends_at = Date.now() + daySeconds * 1000;
 
@@ -186,7 +211,7 @@ export async function transitionToMafiaNight(io: Server, roomCode: string) {
   mState.phase = 'NIGHT';
   mState.votes = {};
   mState.night_actions = {};
-  const nightSeconds = 25;
+  const nightSeconds = mState.settings?.nightDuration || 45;
   mState.timeLeft = nightSeconds;
   mState.timer_ends_at = Date.now() + nightSeconds * 1000;
 
@@ -274,92 +299,110 @@ export async function resolveMafiaDayVoting(io: Server, roomCode: string) {
  */
 export function registerMafiaHandlers(io: Server, socket: Socket) {
   /**
-   * Start Mafia Game
+   * Start Mafia Game with custom settings
    */
-  socket.on('start_mafia_game', async (payload: { room_code?: string }, callback?: (res: any) => void) => {
-    try {
-      let roomCode = payload?.room_code?.toUpperCase();
-      if (!roomCode) {
-        for (const room of socket.rooms) {
-          if (room.startsWith('lobby:')) {
-            roomCode = room.replace('lobby:', '');
-            break;
+  socket.on(
+    'start_mafia_game',
+    async (
+      payload: {
+        room_code?: string;
+        nightDuration?: number;
+        dayDuration?: number;
+        settings?: { nightDuration?: number; dayDuration?: number };
+      },
+      callback?: (res: any) => void
+    ) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
           }
         }
+        if (!roomCode) throw new Error('Room code not found');
+
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error(`Room '${roomCode}' not found`);
+
+        if (state.host_socket_id !== socket.id) {
+          throw new Error('Only the host can start the game');
+        }
+
+        const playerCount = state.players.length;
+        if (playerCount < 3) {
+          throw new Error('At least 3 players are required to start Mafia');
+        }
+
+        const nightDuration = Math.max(10, Math.min(180, Number(payload.nightDuration || payload.settings?.nightDuration || 45)));
+        const dayDuration = Math.max(15, Math.min(600, Number(payload.dayDuration || payload.settings?.dayDuration || 120)));
+
+        // Assign Roles:
+        // 3-4 players: 1 Mafia, 1 Doctor, rest Citizens (or 1 Detective if >= 4)
+        // 5-6 players: 1 Mafia, 1 Doctor, 1 Detective, rest Citizens
+        // 7+ players: 2 Mafia, 1 Doctor, 1 Detective, rest Citizens
+        const roles: MafiaRole[] = [];
+        const mafiaCount = playerCount >= 7 ? 2 : 1;
+        for (let i = 0; i < mafiaCount; i++) roles.push('mafia');
+        roles.push('doctor');
+        if (playerCount >= 4) {
+          roles.push('detective');
+        }
+        while (roles.length < playerCount) {
+          roles.push('citizen');
+        }
+
+        const shuffledRoles = shuffle(roles);
+
+        const mafiaPlayers: MafiaPlayerData[] = state.players.map((p, idx) => ({
+          socket_id: p.socket_id,
+          name: p.name,
+          role: shuffledRoles[idx],
+          is_alive: true
+        }));
+
+        const revealDuration = 6;
+        const initialMafiaState: MafiaGameRoomState = {
+          room_code: roomCode,
+          phase: 'ROLE_REVEAL',
+          players: mafiaPlayers,
+          timeLeft: revealDuration,
+          timer_ends_at: Date.now() + revealDuration * 1000,
+          settings: {
+            nightDuration,
+            dayDuration
+          },
+          night_events: [],
+          recent_elimination: null,
+          winner: null,
+          votes: {},
+          night_actions: {}
+        };
+
+        state.game_id = 'mafia';
+        state.mafia_state = initialMafiaState;
+        await saveGameState(state, ROOM_TTL_SECONDS);
+
+        broadcastMafiaState(io, initialMafiaState);
+
+        if (typeof callback === 'function') {
+          callback({ success: true, state: initialMafiaState });
+        }
+
+        // Transition from ROLE_REVEAL to NIGHT after 6 seconds
+        clearRoomTimer(roomCode);
+        const timer = setTimeout(async () => {
+          await transitionToMafiaNight(io, roomCode!);
+        }, revealDuration * 1000);
+        roomTimers.set(roomCode, timer);
+      } catch (error: any) {
+        console.error('[start_mafia_game error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
       }
-      if (!roomCode) throw new Error('Room code not found');
-
-      const state = await getGameState(roomCode);
-      if (!state) throw new Error(`Room '${roomCode}' not found`);
-
-      if (state.host_socket_id !== socket.id) {
-        throw new Error('Only the host can start the game');
-      }
-
-      const playerCount = state.players.length;
-      if (playerCount < 3) {
-        throw new Error('At least 3 players are required to start Mafia');
-      }
-
-      // Assign Roles:
-      // 3-4 players: 1 Mafia, 1 Doctor, rest Citizens (or 1 Detective if >= 4)
-      // 5-6 players: 1 Mafia, 1 Doctor, 1 Detective, rest Citizens
-      // 7+ players: 2 Mafia, 1 Doctor, 1 Detective, rest Citizens
-      const roles: MafiaRole[] = [];
-      const mafiaCount = playerCount >= 7 ? 2 : 1;
-      for (let i = 0; i < mafiaCount; i++) roles.push('mafia');
-      roles.push('doctor');
-      if (playerCount >= 4) {
-        roles.push('detective');
-      }
-      while (roles.length < playerCount) {
-        roles.push('citizen');
-      }
-
-      const shuffledRoles = shuffle(roles);
-
-      const mafiaPlayers: MafiaPlayerData[] = state.players.map((p, idx) => ({
-        socket_id: p.socket_id,
-        name: p.name,
-        role: shuffledRoles[idx],
-        is_alive: true
-      }));
-
-      const revealDuration = 6;
-      const initialMafiaState: MafiaGameRoomState = {
-        room_code: roomCode,
-        phase: 'ROLE_REVEAL',
-        players: mafiaPlayers,
-        timeLeft: revealDuration,
-        timer_ends_at: Date.now() + revealDuration * 1000,
-        night_events: [],
-        recent_elimination: null,
-        winner: null,
-        votes: {},
-        night_actions: {}
-      };
-
-      state.game_id = 'mafia';
-      state.mafia_state = initialMafiaState;
-      await saveGameState(state, ROOM_TTL_SECONDS);
-
-      broadcastMafiaState(io, initialMafiaState);
-
-      if (typeof callback === 'function') {
-        callback({ success: true, state: initialMafiaState });
-      }
-
-      // Transition from ROLE_REVEAL to NIGHT after 6 seconds
-      clearRoomTimer(roomCode);
-      const timer = setTimeout(async () => {
-        await transitionToMafiaNight(io, roomCode!);
-      }, revealDuration * 1000);
-      roomTimers.set(roomCode, timer);
-    } catch (error: any) {
-      console.error('[start_mafia_game error]:', error.message);
-      if (typeof callback === 'function') callback({ success: false, error: error.message });
     }
-  });
+  );
 
   /**
    * Submit Night Action (Mafia Kill or Doctor Save)
@@ -396,6 +439,11 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
 
       state.mafia_state = mState;
       await saveGameState(state, ROOM_TTL_SECONDS);
+
+      // Check if all actions locked
+      if (checkAllNightActionsLocked(mState)) {
+        io.to(state.host_socket_id).emit('all_actions_locked', { phase: 'NIGHT' });
+      }
 
       if (typeof callback === 'function') callback({ success: true });
     } catch (error: any) {
@@ -446,6 +494,11 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
       await saveGameState(state, ROOM_TTL_SECONDS);
 
       socket.emit('mafia_investigation_result', result);
+
+      if (checkAllNightActionsLocked(mState)) {
+        io.to(state.host_socket_id).emit('all_actions_locked', { phase: 'NIGHT' });
+      }
+
       if (typeof callback === 'function') callback(result);
     } catch (error: any) {
       console.error('[mafia_investigate error]:', error.message);
@@ -495,6 +548,7 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
       ).length;
 
       if (votesReceived >= livingCount) {
+        io.to(state.host_socket_id).emit('all_actions_locked', { phase: 'DAY' });
         await resolveMafiaDayVoting(io, roomCode);
       }
 
@@ -506,7 +560,50 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
   });
 
   /**
-   * Host Skip/Advance Phase
+   * Host Force End Phase Early / Skip Timer
+   */
+  socket.on('force_mafia_phase_end', async (payload: { room_code?: string }, callback?: (res: any) => void) => {
+    try {
+      let roomCode = payload?.room_code?.toUpperCase();
+      if (!roomCode) {
+        for (const room of socket.rooms) {
+          if (room.startsWith('lobby:')) {
+            roomCode = room.replace('lobby:', '');
+            break;
+          }
+        }
+      }
+      if (!roomCode) throw new Error('Room code not found');
+
+      const state = await getGameState(roomCode);
+      if (!state || !state.mafia_state) throw new Error('Game not found');
+
+      if (state.host_socket_id !== socket.id) throw new Error('Only the Host can force phase end');
+
+      clearRoomTimer(roomCode);
+      const mState: MafiaGameRoomState = state.mafia_state;
+
+      console.log(`[Host Override] Room ${roomCode}: Ending phase ${mState.phase} early`);
+
+      if (mState.phase === 'NIGHT') {
+        await transitionToMafiaDay(io, roomCode);
+      } else if (mState.phase === 'DAY' || mState.phase === 'VOTING') {
+        await resolveMafiaDayVoting(io, roomCode);
+      } else if (mState.phase === 'VOTING_REVEAL') {
+        await transitionToMafiaNight(io, roomCode);
+      } else if (mState.phase === 'ROLE_REVEAL') {
+        await transitionToMafiaNight(io, roomCode);
+      }
+
+      if (typeof callback === 'function') callback({ success: true });
+    } catch (error: any) {
+      console.error('[force_mafia_phase_end error]:', error.message);
+      if (typeof callback === 'function') callback({ success: false, error: error.message });
+    }
+  });
+
+  /**
+   * Host Skip/Advance Phase (compatibility alias)
    */
   socket.on('mafia_advance_phase', async (payload: { room_code?: string }, callback?: (res: any) => void) => {
     try {
@@ -526,6 +623,7 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
 
       if (state.host_socket_id !== socket.id) throw new Error('Only the Host can advance phases');
 
+      clearRoomTimer(roomCode);
       const mState: MafiaGameRoomState = state.mafia_state;
 
       if (mState.phase === 'NIGHT') {
@@ -533,6 +631,8 @@ export function registerMafiaHandlers(io: Server, socket: Socket) {
       } else if (mState.phase === 'DAY' || mState.phase === 'VOTING') {
         await resolveMafiaDayVoting(io, roomCode);
       } else if (mState.phase === 'VOTING_REVEAL') {
+        await transitionToMafiaNight(io, roomCode);
+      } else if (mState.phase === 'ROLE_REVEAL') {
         await transitionToMafiaNight(io, roomCode);
       }
 

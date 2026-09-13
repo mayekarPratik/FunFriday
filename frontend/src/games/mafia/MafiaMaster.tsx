@@ -5,7 +5,7 @@ import { MafiaHost } from './MafiaHost';
 import { MafiaClient } from './MafiaClient';
 
 export const MafiaMaster: React.FC = () => {
-  const { syncFromBackend, players: mafiaPlayers } = useMafiaStore();
+  const { syncFromBackend, players: mafiaPlayers, setMafiaState } = useMafiaStore();
   const { socket, activeRoleMode, roomCode, players: corePlayers } = useCoreStore();
 
   const isHost = activeRoleMode === 'host';
@@ -37,18 +37,24 @@ export const MafiaMaster: React.FC = () => {
       }
     };
 
+    const handleActionsLocked = () => {
+      setMafiaState({ allActionsLocked: true });
+    };
+
     socket.on('mafia_state_update', handleMafiaState);
     socket.on('game_state_update', handleGameState);
     socket.on('mafia_day_started', (res: any) => {
       if (res && res.state) syncFromBackend(res.state);
     });
+    socket.on('all_actions_locked', handleActionsLocked);
 
     return () => {
       socket.off('mafia_state_update', handleMafiaState);
       socket.off('game_state_update', handleGameState);
       socket.off('mafia_day_started');
+      socket.off('all_actions_locked', handleActionsLocked);
     };
-  }, [socket, syncFromBackend]);
+  }, [socket, syncFromBackend, setMafiaState]);
 
   return isHost ? <MafiaHost /> : <MafiaClient />;
 };
