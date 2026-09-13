@@ -5,20 +5,31 @@ import { MafiaHost } from './MafiaHost';
 import { MafiaClient } from './MafiaClient';
 
 export const MafiaMaster: React.FC = () => {
-  const { syncFromBackend, players: mafiaPlayers, setMafiaState } = useMafiaStore();
+  const { syncFromBackend, resetGame, setMafiaState } = useMafiaStore();
   const { socket, activeRoleMode, roomCode, players: corePlayers } = useCoreStore();
 
   const isHost = activeRoleMode === 'host';
 
-  // Initialize mafiaStore from coreStore on mount or when corePlayers change
+  // Initialize fresh mafiaStore state from coreStore on mount
   useEffect(() => {
-    if (corePlayers.length > 0 && mafiaPlayers.length === 0) {
+    resetGame();
+    if (corePlayers.length > 0) {
       syncFromBackend({
         room_code: roomCode,
-        players: corePlayers
+        phase: 'LOBBY',
+        players: corePlayers.map((p) => ({
+          socket_id: p.socket_id,
+          name: p.name,
+          role: 'citizen',
+          is_alive: true
+        }))
       });
     }
-  }, [corePlayers, roomCode, mafiaPlayers.length, syncFromBackend]);
+
+    return () => {
+      resetGame();
+    };
+  }, [roomCode]);
 
   useEffect(() => {
     if (!socket) return;

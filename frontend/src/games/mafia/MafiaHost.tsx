@@ -126,6 +126,68 @@ export const MafiaHost: React.FC = () => {
               : 'The Mafia syndicate has gained numerical dominance over the town.'}
           </p>
 
+          {/* Player Roles Reveal Grid */}
+          <div className="w-full max-w-2xl mx-auto bg-[#090A0F]/90 border border-[#1F2430] rounded-2xl p-6 flex flex-col gap-4 text-left shadow-2xl backdrop-blur-md">
+            <h3 className="text-xs font-mono uppercase tracking-widest text-[#94A3B8] flex items-center justify-between border-b border-[#1F2430] pb-3">
+              <span className="flex items-center gap-2 text-white font-bold">
+                <Sparkles className="w-4 h-4 text-amber-400" /> Player Roles & Secret Identities
+              </span>
+              <span>{activePlayers.length} Players</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1">
+              {activePlayers.map((player) => {
+                const isMafia = player.role === 'mafia';
+                const isDoctor = player.role === 'doctor';
+                const isDetective = player.role === 'detective';
+                const isDead = player.is_alive === false;
+
+                return (
+                  <div
+                    key={player.socket_id}
+                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition ${
+                      isMafia
+                        ? 'bg-red-950/30 border-red-900/50 text-red-300'
+                        : isDetective
+                        ? 'bg-blue-950/30 border-blue-900/50 text-blue-300'
+                        : isDoctor
+                        ? 'bg-emerald-950/30 border-emerald-900/50 text-emerald-300'
+                        : 'bg-[#12141C] border-[#1F2430] text-[#F8FAFC]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-[#191C28] flex items-center justify-center text-[10px] font-bold text-white">
+                        {player.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className={`font-bold ${isDead ? 'line-through text-[#64748B]' : 'text-white'}`}>
+                        {player.name}
+                      </span>
+                      {isDead && (
+                        <span className="text-[10px] font-mono text-red-400 bg-red-950/60 px-1.5 py-0.5 rounded border border-red-900/40">
+                          DEAD
+                        </span>
+                      )}
+                    </div>
+
+                    <span
+                      className={`font-mono uppercase font-bold tracking-wider text-[11px] px-2 py-0.5 rounded ${
+                        isMafia
+                          ? 'bg-red-900/40 text-red-400 border border-red-800/50'
+                          : isDetective
+                          ? 'bg-blue-900/40 text-blue-400 border border-blue-800/50'
+                          : isDoctor
+                          ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/50'
+                          : 'bg-neutral-800 text-gray-400'
+                      }`}
+                    >
+                      {player.role || 'Citizen'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="pt-4 flex justify-center">
             <button
               onClick={hostRestartGame}

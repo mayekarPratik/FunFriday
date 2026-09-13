@@ -299,6 +299,16 @@ export function registerSocketHandlers(io: Server): void {
 
         const gameId = payload.gameId || payload.game_id || 'werewolf';
         state.game_id = gameId;
+        state.phase = 'lobby';
+        delete state.mafia_state;
+
+        // Reset player roles and alive status for the new game selection
+        state.players = state.players.map((p) => ({
+          ...p,
+          role: '' as any,
+          is_alive: true,
+          is_lover: false
+        }));
 
         await saveGameState(state, ROOM_TTL_SECONDS);
         broadcastGameState(io, state);

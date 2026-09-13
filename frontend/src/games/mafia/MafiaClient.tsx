@@ -47,6 +47,7 @@ export const MafiaClient: React.FC = () => {
     phase,
     players,
     timeLeft,
+    winner,
     getMyPlayer,
     selectedActionTarget,
     myInvestigation,
@@ -56,8 +57,12 @@ export const MafiaClient: React.FC = () => {
   } = useMafiaStore();
 
   const me = getMyPlayer();
-
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+
+  // Clear local target selection when phase changes (e.g. entering a new night round or day voting)
+  React.useEffect(() => {
+    setSelectedTarget(null);
+  }, [phase]);
 
   // 1. Spectator / Eliminated Screen
   if (me && !me.is_alive && phase !== 'GAME_OVER' && phase !== 'LOBBY') {
@@ -430,7 +435,98 @@ export const MafiaClient: React.FC = () => {
     );
   }
 
-  // 5. Default Waiting Screen
+  // 5. Game Over Reveal Screen for Mobile Players
+  if (phase === 'GAME_OVER') {
+    const isTownWin = winner === 'town';
+    return (
+      <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center min-h-[80vh] p-4 text-center space-y-6 animate-fadeIn">
+        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center border shadow-2xl ${
+          isTownWin
+            ? 'bg-blue-950/50 border-blue-600 text-blue-400 shadow-blue-950/80'
+            : 'bg-red-950/50 border-red-600 text-red-400 shadow-red-950/80'
+        }`}>
+          {isTownWin ? <Shield className="w-10 h-10" /> : <Skull className="w-10 h-10" />}
+        </div>
+
+        <div className="space-y-2">
+          <span className="px-3.5 py-1 rounded-full bg-[#191C28] border border-[#1F2430] text-xs font-mono text-amber-400">
+            Game Over • Final Verdict
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
+            {isTownWin ? 'Townspeople Victorious!' : 'The Mafia Takes Over!'}
+          </h1>
+          <p className="text-xs text-[#94A3B8] font-serif max-w-xs mx-auto">
+            {isTownWin
+              ? 'The town has successfully eliminated all Mafia threats!'
+              : 'The Mafia syndicate has taken control of the town.'}
+          </p>
+        </div>
+
+        {/* Roles Reveal List */}
+        <div className="w-full bg-[#12141C] border border-[#1F2430] rounded-2xl p-4 flex flex-col gap-3 text-left">
+          <h3 className="text-xs font-mono uppercase tracking-widest text-[#94A3B8] flex items-center justify-between border-b border-[#1F2430] pb-2">
+            <span className="text-white font-bold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Secret Identities
+            </span>
+            <span>{players.length} Players</span>
+          </h3>
+
+          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            {players.map((player) => {
+              const isMafia = player.role === 'mafia';
+              const isDoctor = player.role === 'doctor';
+              const isDetective = player.role === 'detective';
+              const isDead = player.is_alive === false;
+
+              return (
+                <div
+                  key={player.socket_id}
+                  className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                    isMafia
+                      ? 'bg-red-950/30 border-red-900/50 text-red-300'
+                      : isDetective
+                      ? 'bg-blue-950/30 border-blue-900/50 text-blue-300'
+                      : isDoctor
+                      ? 'bg-emerald-950/30 border-emerald-900/50 text-emerald-300'
+                      : 'bg-[#191C28] border-[#1F2430] text-[#F8FAFC]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`font-bold ${isDead ? 'line-through text-[#64748B]' : 'text-white'}`}>
+                      {player.name}
+                    </span>
+                    {player.socket_id === me?.socket_id && (
+                      <span className="text-[10px] text-amber-400 font-mono font-bold">(You)</span>
+                    )}
+                  </div>
+
+                  <span
+                    className={`font-mono uppercase font-bold tracking-wider text-[10px] px-2 py-0.5 rounded ${
+                      isMafia
+                        ? 'bg-red-900/40 text-red-400 border border-red-800/50'
+                        : isDetective
+                        ? 'bg-blue-900/40 text-blue-400 border border-blue-800/50'
+                        : isDoctor
+                        ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/50'
+                        : 'bg-neutral-800 text-gray-400'
+                    }`}
+                  >
+                    {player.role || 'Citizen'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <p className="text-xs text-[#64748B] font-mono">
+          Waiting for Host to return to The Lobby...
+        </p>
+      </div>
+    );
+  }
+
+  // 6. Default Waiting Screen
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center min-h-[70vh] p-6 text-center">
       <div className="w-16 h-16 rounded-2xl bg-[#12141C] border border-[#1F2430] flex items-center justify-center text-amber-400 animate-pulse mb-4">

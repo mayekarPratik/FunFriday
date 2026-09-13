@@ -114,9 +114,12 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
         ? data.players
         : (state.players.length > 0 ? state.players : (core.players as any[]));
 
+      const newPhase = data.phase || (data.mafia_state?.phase) || state.phase;
+      const phaseChanged = newPhase !== state.phase;
+
       return {
         room_code: data.room_code || data.roomCode || core.roomCode || state.room_code,
-        phase: data.phase || (data.mafia_state?.phase) || state.phase,
+        phase: newPhase,
         players: updatedPlayers,
         timeLeft: data.timeLeft !== undefined ? data.timeLeft : (data.time_left !== undefined ? data.time_left : state.timeLeft),
         timerEndsAt: data.timer_ends_at !== undefined ? data.timer_ends_at : (data.timerEndsAt !== undefined ? data.timerEndsAt : state.timerEndsAt),
@@ -127,7 +130,9 @@ export const useMafiaStore = create<MafiaState>((set, get) => ({
         nightEvents: data.night_events || data.nightEvents || state.nightEvents,
         recentElimination: data.recent_elimination !== undefined ? data.recent_elimination : (data.recentElimination !== undefined ? data.recentElimination : state.recentElimination),
         winner: data.winner !== undefined ? data.winner : state.winner,
-        votes: data.votes || state.votes,
+        votes: data.votes || (phaseChanged && newPhase === 'NIGHT' ? {} : state.votes),
+        myInvestigation: phaseChanged && newPhase === 'NIGHT' ? null : state.myInvestigation,
+        selectedActionTarget: phaseChanged ? null : state.selectedActionTarget,
         allActionsLocked: false, // Reset on new phase sync
         lastActionError: null
       };
