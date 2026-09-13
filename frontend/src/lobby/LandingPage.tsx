@@ -9,7 +9,6 @@ import {
   User,
   Sparkles,
   Monitor,
-  Shield,
   Play,
   AlertCircle
 } from 'lucide-react';
@@ -133,69 +132,60 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen w-full flex flex-col justify-between items-center px-4 py-8 relative z-0 selection:bg-[#3B82F6]/30 overflow-x-hidden"
+      className="relative z-10 w-full min-h-screen grid grid-cols-1 lg:grid-cols-2 selection:bg-[#3B82F6]/30 overflow-x-hidden"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Top Header Logo & Status */}
-      <header className="w-full max-w-5xl flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#12141C] border border-[#1F2430] flex items-center justify-center text-[#3B82F6] shadow-lg shadow-[#3B82F6]/5">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-['Montserrat'] text-sm font-black tracking-[0.2em] uppercase text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">
-              The Lobby
-            </span>
-            <span className="font-['Space_Mono'] text-[9px] text-gray-400 tracking-[0.2em] uppercase -mt-0.5">
-              MultiPlayer Game Hub
-            </span>
-          </div>
-        </div>
+      {/* Left Column: Reserved for Interactive Constellation Canvas */}
+      <div className="hidden lg:block w-full h-full pointer-events-none" />
 
-        {/* Global Connection Pill */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1F2430] bg-[#12141C]/80 backdrop-blur-md text-xs font-mono">
-          <span
-            className={`w-2 h-2 rounded-full ${isConnected
-              ? 'bg-[#22C55E] shadow-sm shadow-[#22C55E]/50 animate-pulse'
-              : isConnecting
-                ? 'bg-[#EAB308] animate-ping'
-                : 'bg-[#EF4444]'
+      {/* Right Column: Master Wrapper Container */}
+      <div className="flex flex-col justify-center items-start w-full max-w-[440px] mx-auto h-full min-h-screen px-6 lg:px-0 py-12">
+        {/* Badges Row: Next-Gen Pill & Server Online Badge */}
+        <div className="flex flex-row items-center justify-between w-full mb-6 gap-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-semibold tracking-wide">
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Next-Gen Social Deduction</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#1F2430] bg-[#12141C]/80 backdrop-blur-md text-xs font-mono shadow-sm">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                isConnected
+                  ? 'bg-[#22C55E] shadow-sm shadow-[#22C55E]/50 animate-pulse'
+                  : isConnecting
+                  ? 'bg-[#EAB308] animate-ping'
+                  : 'bg-[#EF4444]'
               }`}
-          />
-          <span className="text-[#94A3B8]">
-            {isConnected ? 'Server Online' : isConnecting ? 'Connecting...' : 'Offline'}
-          </span>
-        </div>
-      </header>
-
-      {/* Hero & Action Card Container */}
-      <main className="w-full max-w-md my-auto flex flex-col items-center gap-8 z-10 pt-4">
-        {/* Cinematic AAA Hero Title & Technical Subtitle */}
-        <div className="text-center flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-semibold tracking-wide mb-4">
-            <Sparkles className="w-3.5 h-3.5" /> Next-Gen Social Deduction Games
+            />
+            <span className="text-[#94A3B8]">
+              {isConnected ? 'Server Online' : isConnecting ? 'Connecting...' : 'Offline'}
+            </span>
           </div>
+        </div>
 
-          <h1 className="font-['Montserrat'] text-5xl font-black text-white tracking-[0.2em] uppercase drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] select-none">
+        {/* Hero Block (Stacked & Left-aligned with whitespace-nowrap) */}
+        <div className="flex flex-col items-start gap-2 mb-8 w-full">
+          <h1 className="font-['Montserrat'] text-4xl lg:text-5xl font-black text-white tracking-[0.2em] uppercase whitespace-nowrap drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] select-none leading-none">
             The Lobby
           </h1>
 
-          <p className="font-['Space_Mono'] text-xs text-gray-400 tracking-[0.3em] uppercase mt-2">
+          <p className="font-['Space_Mono'] text-xs text-gray-400 tracking-[0.3em] uppercase">
             MULTIPLAYER GAME HUB
           </p>
 
-          <div className="h-6 flex items-center justify-center mt-3">
+          <div className="h-5 flex items-center mt-1">
             <p
-              className={`text-sm font-serif italic text-[#94A3B8] transition-opacity duration-300 ${fadeState ? 'opacity-100' : 'opacity-0'
-                }`}
+              className={`text-sm font-serif italic text-[#94A3B8] transition-opacity duration-300 ${
+                fadeState ? 'opacity-100' : 'opacity-0'
+              }`}
             >
               "{FLAVOR_TEXTS[flavorIndex]}"
             </p>
           </div>
         </div>
 
-        {/* Parallax Interactive Card */}
+        {/* Parallax Interactive Frosted Glass Card (w-full) */}
         <div
           ref={cardRef}
           style={{
@@ -217,10 +207,11 @@ export const LandingPage: React.FC = () => {
                 setLocalError(null);
                 clearErrors();
               }}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${mode === 'join'
-                ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
-                : 'text-[#94A3B8] hover:text-white'
-                }`}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                mode === 'join'
+                  ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
+                  : 'text-[#94A3B8] hover:text-white'
+              }`}
             >
               <Smartphone className="w-4 h-4 text-[#3B82F6]" />
               <span>Join Game</span>
@@ -233,10 +224,11 @@ export const LandingPage: React.FC = () => {
                 setLocalError(null);
                 clearErrors();
               }}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${mode === 'host'
-                ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
-                : 'text-[#94A3B8] hover:text-white'
-                }`}
+              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                mode === 'host'
+                  ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
+                  : 'text-[#94A3B8] hover:text-white'
+              }`}
             >
               <Tv className="w-4 h-4 text-[#3B82F6]" />
               <span>Host on TV</span>
@@ -352,15 +344,16 @@ export const LandingPage: React.FC = () => {
             </div>
           )}
         </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="w-full max-w-5xl flex items-center justify-between text-xs text-[#94A3B8] border-t border-[#1F2430] pt-4 z-10">
-        <span>The Lobby • Multiplayer Game Hub</span>
-        <span>Created by Pratik Mayekar</span>
-      </footer>
+        {/* Footer */}
+        <footer className="w-full flex items-center justify-between text-[11px] text-[#64748B] pt-6">
+          <span>The Lobby • Multiplayer Game Hub</span>
+          <span>Created by Pratik Mayekar</span>
+        </footer>
+      </div>
     </div>
   );
 };
 
 export default LandingPage;
+
