@@ -132,8 +132,8 @@ export const App: React.FC = () => {
 
   return (
     <>
-      {/* Global Interactive Canvas Starfield */}
-      <InteractiveBackground />
+      {/* Global Interactive Canvas Starfield (Constellations on Landing Page, Peaceful Drift in Games) */}
+      <InteractiveBackground isLandingPage={!hasRoomCode} />
 
       {/* Global Server Wake-Up Overlay for Render.com cold starts */}
       {!isConnected && <ServerWakeupModal />}

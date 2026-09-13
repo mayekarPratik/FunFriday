@@ -144,8 +144,21 @@ function getShapeCoordinates(
   return perimeterPoints;
 }
 
-export const InteractiveBackground: React.FC = () => {
+export interface InteractiveBackgroundProps {
+  isLandingPage?: boolean;
+}
+
+export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ isLandingPage = true }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isLandingPageRef = useRef(isLandingPage);
+  const releaseParticlesRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    isLandingPageRef.current = isLandingPage;
+    if (!isLandingPage && releaseParticlesRef.current) {
+      releaseParticlesRef.current();
+    }
+  }, [isLandingPage]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -230,6 +243,7 @@ export const InteractiveBackground: React.FC = () => {
     }
 
     const applyShapeTargets = (iconType: 'wolf' | 'mafia') => {
+      if (!isLandingPageRef.current) return;
       const shapeCoords = getShapeCoordinates(iconType, width, height);
       if (shapeCoords.length === 0) return;
 
@@ -250,6 +264,7 @@ export const InteractiveBackground: React.FC = () => {
     };
 
     const releaseParticles = () => {
+      shapeOpacity = 0;
       particles.forEach((p) => {
         p.state = 'drifting';
         // Soft, organic scatter nudge so they slowly disengage and drift apart
@@ -259,6 +274,8 @@ export const InteractiveBackground: React.FC = () => {
         p.vy = Math.sin(scatterAngle) * scatterSpeed;
       });
     };
+
+    releaseParticlesRef.current = releaseParticles;
 
     // State Machine Cycle (38 seconds total loop - 10s gap, 7s solid shape hold)
     // Phase 1 (0-10s): Drifting (10s gap)
@@ -273,10 +290,11 @@ export const InteractiveBackground: React.FC = () => {
 
     const render = () => {
       time += 0.02;
+      const activeLanding = isLandingPageRef.current;
       const elapsed = (performance.now() - startTime) % cycleDuration;
 
-      // On non-mobile devices, check and update current cycle phase
-      if (!isMobile) {
+      // State machine cycle runs only on desktop and only on the Landing Page
+      if (!isMobile && activeLanding) {
         let currentPhase = 0;
         if (elapsed >= 0 && elapsed < 10000) {
           currentPhase = 1; // Phase 1: Drifting (10s gap)
@@ -307,6 +325,10 @@ export const InteractiveBackground: React.FC = () => {
         }
       } else {
         shapeOpacity = 0;
+        if (lastPhase !== 1) {
+          lastPhase = 1;
+          releaseParticles();
+        }
       }
 
       ctx.fillStyle = '#000000';
@@ -320,7 +342,7 @@ export const InteractiveBackground: React.FC = () => {
         p.alpha = p.baseAlpha + Math.sin(time * p.twinkleSpeed * 50 + i) * 0.15;
         p.alpha = Math.max(0.1, Math.min(1, p.alpha));
 
-        if (p.state === 'drifting') {
+        if (p.state === 'drifting' || !activeLanding) {
           // Physics: Mouse repulsion only on desktop while drifting
           if (!isMobile) {
             const dx = mouse.x - p.x;
@@ -372,16 +394,17 @@ export const InteractiveBackground: React.FC = () => {
         ctx.fill();
 
         // Extra soft halo on forming particles & prominent stars
-        if (p.size > 1.8 || p.state === 'forming') {
+        const isForming = activeLanding && p.state === 'forming';
+        if (p.size > 1.8 || isForming) {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * (p.state === 'forming' ? 1.6 : 2), 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, p.size * (isForming ? 1.6 : 2), 0, Math.PI * 2);
           ctx.fillStyle = `rgba(186, 230, 253, ${p.alpha * 0.3})`;
           ctx.fill();
         }
       }
 
-      // Constellation Effect: Draw connecting lines when forming shapes
-      if (shapeOpacity > 0.001) {
+      // Constellation Effect: Draw connecting lines only when forming shapes on landing page
+      if (activeLanding && shapeOpacity > 0.001) {
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
             const dx = particles[i].x - particles[j].x;
@@ -410,6 +433,7 @@ export const InteractiveBackground: React.FC = () => {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      releaseParticlesRef.current = null;
       window.removeEventListener('resize', handleResize);
       if (!isMobile) {
         window.removeEventListener('mousemove', handleMouseMove);
