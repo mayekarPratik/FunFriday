@@ -7,9 +7,10 @@ import type {
   JoinRoomResponse,
   StartGameResponse,
   Player,
-  RoleSettings
+  RoleSettings,
+  GameSettings
 } from '../types/game';
-import { DEFAULT_ROLE_SETTINGS } from '../types/game';
+import { DEFAULT_ROLE_SETTINGS, DEFAULT_GAME_SETTINGS } from '../types/game';
 
 const DEFAULT_SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -25,6 +26,7 @@ interface GameStore {
   lastActionError: string | null;
   activeRoleMode: UserRoleMode;
   role_settings: RoleSettings;
+  settings: GameSettings;
 
   // Selectors
   getMyPlayer: () => Player | undefined;
@@ -36,6 +38,7 @@ interface GameStore {
   joinRoom: (payload: JoinRoomPayload) => Promise<JoinRoomResponse>;
   startGame: () => Promise<StartGameResponse>;
   updateRoleSettings: (settings: RoleSettings) => void;
+  updateRoomSettings: (settings: GameSettings) => void;
   submitNightAction: (payloadOrTarget: string | { target_socket_id?: string; heal_target?: string | null; poison_target?: string | null; [key: string]: any }) => void;
   investigatePlayer: (targetSocketId: string) => Promise<{ success: boolean; is_wolf?: boolean; error?: string }>;
   advanceNightPriority: (priority?: number) => void;
@@ -43,6 +46,7 @@ interface GameStore {
   submitVote: (targetSocketId: string) => void;
   tallyDayVotes: () => void;
   hostAdvancePhase: () => void;
+  hostRestartGame: () => void;
   leaveRoom: () => void;
   clearErrors: () => void;
   disconnectSocket: () => void;
@@ -58,6 +62,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   lastActionError: null,
   activeRoleMode: null,
   role_settings: { ...DEFAULT_ROLE_SETTINGS },
+  settings: { ...DEFAULT_GAME_SETTINGS },
 
   getMyPlayer: () => {
     const { gameState, socket, myPlayerName } = get();
@@ -235,6 +240,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
+  updateRoomSettings: (settings: GameSettings) => {
+    const { socket, gameState } = get();
+    set({ settings });
+    if (gameState) {
+      set({
+        gameState: {
+          ...gameState,
+          settings
+        }
+      });
+      if (socket) {
+        socket.emit('update_room_settings', {
+          room_code: gameState.room_code,
+          settings
+        });
+      }
+    }
+  },
+
   submitNightAction: (payloadOrTarget: string | { target_socket_id?: string; heal_target?: string | null; poison_target?: string | null; [key: string]: any }) => {
     const { socket, gameState } = get();
     if (socket && gameState) {
@@ -301,6 +325,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { socket, gameState } = get();
     if (socket && gameState) {
       socket.emit('host_advance_phase', { room_code: gameState.room_code });
+    }
+  },
+
+  hostRestartGame: () => {
+    const { socket, gameState } = get();
+    if (socket && gameState) {
+      socket.emit('host_restart_game', { room_code: gameState.room_code });
     }
   },
 

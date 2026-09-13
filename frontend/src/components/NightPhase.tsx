@@ -16,13 +16,20 @@ import {
 } from 'lucide-react';
 import { WitchAction } from '../views/roles/WitchAction';
 
-const REVEAL_DURATION_MS = 6000;
-
 export const NightPhase: React.FC = () => {
-  const { gameState, getMyPlayer, submitNightAction, investigatePlayer, socket } = useGameStore();
+  const { gameState, getMyPlayer, submitNightAction, investigatePlayer, socket, settings } = useGameStore();
+
+  const me = getMyPlayer();
+  const myRole = me?.role || 'villager';
+
+  // Dynamic action time from Zustand store / GameState settings
+  const baseActionSeconds = gameState?.settings?.action_time_seconds || settings?.action_time_seconds || 6;
+  // Dual-choice roles (Cupid) get safely +2s for multi-tap selection
+  const roleExtraSeconds = myRole === 'cupid' ? 2 : 0;
+  const revealDurationMs = (baseActionSeconds + roleExtraSeconds) * 1000;
 
   const [isRevealed, setIsRevealed] = useState(false);
-  const [timeLeftMs, setTimeLeftMs] = useState(REVEAL_DURATION_MS);
+  const [timeLeftMs, setTimeLeftMs] = useState(revealDurationMs);
   const [actionConfirmed, setActionConfirmed] = useState(false);
 
   // Seer investigation result state: { target_name: string; is_wolf: boolean }
@@ -35,8 +42,6 @@ export const NightPhase: React.FC = () => {
   const timeoutRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
   const autoAdvanceTimeoutRef = useRef<number | null>(null);
-
-  const me = getMyPlayer();
 
   // If eliminated, render Spectator Mode
   if (me && !me.is_alive) {
@@ -82,9 +87,9 @@ export const NightPhase: React.FC = () => {
     setSeerResult(null);
     setIsInvestigating(false);
     setSelectedCupidTargets([]);
-    setTimeLeftMs(REVEAL_DURATION_MS);
+    setTimeLeftMs(revealDurationMs);
     clearAllTimers();
-  }, [gameState?.active_role, gameState?.phase]);
+  }, [gameState?.active_role, gameState?.phase, revealDurationMs]);
 
   // Listen for socket 'seer_result' if triggered externally
   useEffect(() => {
@@ -121,7 +126,7 @@ export const NightPhase: React.FC = () => {
   const hideScreen = () => {
     clearAllTimers();
     setIsRevealed(false);
-    setTimeLeftMs(REVEAL_DURATION_MS);
+    setTimeLeftMs(revealDurationMs);
   };
 
   const handleCheckTurn = () => {
@@ -129,14 +134,14 @@ export const NightPhase: React.FC = () => {
 
     clearAllTimers();
     setIsRevealed(true);
-    setTimeLeftMs(REVEAL_DURATION_MS);
+    setTimeLeftMs(revealDurationMs);
 
     const startTime = Date.now();
 
     // 50ms interval for smooth progress bar and countdown
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, REVEAL_DURATION_MS - elapsed);
+      const remaining = Math.max(0, revealDurationMs - elapsed);
       setTimeLeftMs(remaining);
 
       if (remaining <= 0) {
@@ -147,7 +152,7 @@ export const NightPhase: React.FC = () => {
     // Hard timeout
     timeoutRef.current = setTimeout(() => {
       hideScreen();
-    }, REVEAL_DURATION_MS);
+    }, revealDurationMs);
   };
 
   const handleSelectTarget = async (targetSocketId: string) => {
@@ -171,7 +176,7 @@ export const NightPhase: React.FC = () => {
           submitNightAction(targetSocketId);
           setIsRevealed(false);
           setActionConfirmed(true);
-          setTimeLeftMs(REVEAL_DURATION_MS);
+          setTimeLeftMs(revealDurationMs);
         }, 3000);
       } else {
         // Fallback submit
@@ -187,7 +192,7 @@ export const NightPhase: React.FC = () => {
     submitNightAction(targetSocketId);
     setIsRevealed(false);
     setActionConfirmed(true);
-    setTimeLeftMs(REVEAL_DURATION_MS);
+    setTimeLeftMs(revealDurationMs);
   };
 
   const handleCupidSelect = (targetSocketId: string) => {
@@ -211,7 +216,7 @@ export const NightPhase: React.FC = () => {
     });
     setIsRevealed(false);
     setActionConfirmed(true);
-    setTimeLeftMs(REVEAL_DURATION_MS);
+    setTimeLeftMs(revealDurationMs);
   };
 
   if (!gameState || !me) {
@@ -222,7 +227,6 @@ export const NightPhase: React.FC = () => {
     );
   }
 
-  const myRole = me.role || 'villager';
   const myPriority = ROLE_PRIORITIES[myRole] ?? 0;
   const isMyTurn =
     (gameState.active_role && gameState.active_role === myRole) ||
@@ -238,7 +242,7 @@ export const NightPhase: React.FC = () => {
   );
 
   const secondsRemaining = Math.ceil(timeLeftMs / 1000);
-  const progressPercent = Math.max(0, Math.min(100, (timeLeftMs / REVEAL_DURATION_MS) * 100));
+  const progressPercent = Math.max(0, Math.min(100, (timeLeftMs / revealDurationMs) * 100));
 
   return (
     <div

@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { Moon, HeartPulse, Skull, Shield, Sparkles, CheckCircle2, Clock, FlaskConical } from 'lucide-react';
 
-const REVEAL_DURATION_MS = 8000;
-
 export const WitchAction: React.FC = () => {
-  const { gameState, getMyPlayer, submitNightAction, socket } = useGameStore();
+  const { gameState, getMyPlayer, submitNightAction, socket, settings } = useGameStore();
+
+  // Base action time from settings with +2s extra for Witch's dual-potion menu
+  const baseActionSeconds = gameState?.settings?.action_time_seconds || settings?.action_time_seconds || 6;
+  const revealDurationMs = (baseActionSeconds + 2) * 1000;
 
   const [isRevealed, setIsRevealed] = useState(false);
-  const [timeLeftMs, setTimeLeftMs] = useState(REVEAL_DURATION_MS);
+  const [timeLeftMs, setTimeLeftMs] = useState(revealDurationMs);
   const [actionConfirmed, setActionConfirmed] = useState(false);
 
   // Local action states
@@ -103,7 +105,7 @@ export const WitchAction: React.FC = () => {
 
     setIsRevealed(false);
     setActionConfirmed(true);
-    setTimeLeftMs(REVEAL_DURATION_MS);
+    setTimeLeftMs(revealDurationMs);
   };
 
   const handleCheckTurn = () => {
@@ -111,13 +113,13 @@ export const WitchAction: React.FC = () => {
 
     clearAllTimers();
     setIsRevealed(true);
-    setTimeLeftMs(REVEAL_DURATION_MS);
+    setTimeLeftMs(revealDurationMs);
 
     const startTime = Date.now();
 
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, REVEAL_DURATION_MS - elapsed);
+      const remaining = Math.max(0, revealDurationMs - elapsed);
       setTimeLeftMs(remaining);
 
       if (remaining <= 0) {
@@ -137,7 +139,7 @@ export const WitchAction: React.FC = () => {
         clearAllTimers();
         setIsRevealed(false);
       }
-    }, REVEAL_DURATION_MS);
+    }, revealDurationMs);
   };
 
   const handleConfirmActions = () => {
@@ -145,7 +147,7 @@ export const WitchAction: React.FC = () => {
   };
 
   const secondsRemaining = Math.ceil(timeLeftMs / 1000);
-  const progressPercent = Math.max(0, Math.min(100, (timeLeftMs / REVEAL_DURATION_MS) * 100));
+  const progressPercent = Math.max(0, Math.min(100, (timeLeftMs / revealDurationMs) * 100));
 
   return (
     <div

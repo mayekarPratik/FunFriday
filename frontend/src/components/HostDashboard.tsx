@@ -21,8 +21,12 @@ import {
   Target,
   Sliders,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+  Settings
 } from 'lucide-react';
+import type { GameSettings } from '../types/game';
+import { DEFAULT_GAME_SETTINGS } from '../types/game';
 
 interface RoleConfigItem {
   id: keyof RoleSettings;
@@ -110,7 +114,7 @@ const AVAILABLE_ROLES: RoleConfigItem[] = [
 ];
 
 export const HostDashboard: React.FC = () => {
-  const { gameState, role_settings, updateRoleSettings, leaveRoom, startGame } = useGameStore();
+  const { gameState, role_settings, settings, updateRoleSettings, updateRoomSettings, leaveRoom, startGame } = useGameStore();
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
 
@@ -118,6 +122,7 @@ export const HostDashboard: React.FC = () => {
 
   // Compute current settings from gameState or fallback to store
   const currentSettings: RoleSettings = gameState.role_settings || role_settings;
+  const currentRoomSettings: GameSettings = gameState.settings || settings || DEFAULT_GAME_SETTINGS;
 
   const totalRolesInDeck = Object.entries(currentSettings).reduce(
     (sum, [key, val]) => (typeof val === 'number' && key in currentSettings ? sum + val : sum),
@@ -144,6 +149,24 @@ export const HostDashboard: React.FC = () => {
       [roleId]: currentValue - 1
     };
     updateRoleSettings(newSettings);
+  };
+
+  const handleAdjustDiscussionTime = (delta: number) => {
+    const currentVal = currentRoomSettings.discussion_time_seconds || 300;
+    const nextVal = Math.max(60, currentVal + delta);
+    updateRoomSettings({
+      ...currentRoomSettings,
+      discussion_time_seconds: nextVal
+    });
+  };
+
+  const handleAdjustActionTime = (delta: number) => {
+    const currentVal = currentRoomSettings.action_time_seconds || 6;
+    const nextVal = Math.max(3, currentVal + delta);
+    updateRoomSettings({
+      ...currentRoomSettings,
+      action_time_seconds: nextVal
+    });
   };
 
   const handleStartGame = async () => {
@@ -351,6 +374,88 @@ export const HostDashboard: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+
+          {/* Game Settings Control Panel */}
+          <div className="wope-card p-5 flex flex-col gap-4 border border-[#1F2430] bg-[#12141C]/80 mt-2">
+            <div className="flex items-center justify-between border-b border-[#1F2430] pb-3">
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4 text-[#3B82F6]" />
+                <h3 className="text-sm font-bold text-[#F8FAFC]">Game Timers & Settings</h3>
+              </div>
+              <span className="text-[11px] font-mono text-[#94A3B8]">Custom Rules</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Discussion Phase Time */}
+              <div className="p-3 rounded-xl bg-[#090A0F] border border-[#1F2430] flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-[#F8FAFC] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" /> Discussion Time
+                  </span>
+                  <p className="text-[10px] text-[#94A3B8]">Day trial timer duration</p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustDiscussionTime(-30)}
+                    disabled={(currentRoomSettings.discussion_time_seconds || 300) <= 60}
+                    className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+
+                  <span className="w-12 text-center font-mono font-bold text-xs text-amber-400">
+                    {Math.floor((currentRoomSettings.discussion_time_seconds || 300) / 60)}m{' '}
+                    {(currentRoomSettings.discussion_time_seconds || 300) % 60 > 0
+                      ? `${(currentRoomSettings.discussion_time_seconds || 300) % 60}s`
+                      : ''}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustDiscussionTime(30)}
+                    className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-neutral-500 flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Screen Time */}
+              <div className="p-3 rounded-xl bg-[#090A0F] border border-[#1F2430] flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-[#F8FAFC] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-blue-400" /> Action Screen Time
+                  </span>
+                  <p className="text-[10px] text-[#94A3B8]">Night check turn window</p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustActionTime(-1)}
+                    disabled={(currentRoomSettings.action_time_seconds || 6) <= 3}
+                    className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+
+                  <span className="w-10 text-center font-mono font-bold text-xs text-blue-400">
+                    {currentRoomSettings.action_time_seconds || 6}s
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustActionTime(1)}
+                    className="w-7 h-7 rounded-lg bg-[#12141C] border border-[#1F2430] hover:border-neutral-500 flex items-center justify-center text-[#F8FAFC] transition active:scale-95 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

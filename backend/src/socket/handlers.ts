@@ -21,7 +21,8 @@ import {
   resolveDayVote,
   checkWinCondition,
   getSocketRoomName,
-  broadcastGameState
+  broadcastGameState,
+  resetGameState
 } from '../game/engine';
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -61,6 +62,10 @@ export function registerSocketHandlers(io: Server): void {
             }
           },
           role_settings: { ...DEFAULT_ROLE_SETTINGS },
+          settings: {
+            discussion_time_seconds: 300,
+            action_time_seconds: 6
+          },
           players: [],
           votes: {},
           last_night_killed: null,
@@ -128,6 +133,56 @@ export function registerSocketHandlers(io: Server): void {
         if (typeof callback === 'function') callback({ success: true, state });
       } catch (error: any) {
         console.error('[update_settings error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
+      }
+    });
+
+    /**
+     * Handler for 'update_room_settings'
+     * Updates customizable timers (discussion_time_seconds, action_time_seconds)
+     */
+    socket.on('update_room_settings', async (payload: { room_code?: string; settings?: { discussion_time_seconds?: number; action_time_seconds?: number }; discussion_time_seconds?: number; action_time_seconds?: number }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+        if (!roomCode) throw new Error('Room code not found');
+
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error(`Room '${roomCode}' not found`);
+
+        if (state.host_socket_id !== socket.id) {
+          throw new Error('Only the host can update room settings');
+        }
+
+        const settingsPayload = payload.settings || payload;
+        const currentSettings = state.settings || { discussion_time_seconds: 300, action_time_seconds: 6 };
+
+        const discussionTime = typeof settingsPayload.discussion_time_seconds === 'number'
+          ? Math.max(60, settingsPayload.discussion_time_seconds)
+          : currentSettings.discussion_time_seconds;
+
+        const actionTime = typeof settingsPayload.action_time_seconds === 'number'
+          ? Math.max(3, settingsPayload.action_time_seconds)
+          : currentSettings.action_time_seconds;
+
+        state.settings = {
+          discussion_time_seconds: discussionTime,
+          action_time_seconds: actionTime
+        };
+
+        await saveGameState(state, ROOM_TTL_SECONDS);
+        broadcastGameState(io, state);
+
+        if (typeof callback === 'function') callback({ success: true, state });
+      } catch (error: any) {
+        console.error('[update_room_settings error]:', error.message);
         if (typeof callback === 'function') callback({ success: false, error: error.message });
       }
     });
@@ -439,7 +494,8 @@ export function registerSocketHandlers(io: Server): void {
         }
 
         if (state.phase === 'morning_recap') {
-          const dayEndsAt = Date.now() + 5 * 60 * 1000;
+          const discussionSeconds = state.settings?.discussion_time_seconds || 300;
+          const dayEndsAt = Date.now() + discussionSeconds * 1000;
           state.phase = 'day';
           state.timer_ends_at = dayEndsAt;
           state.day_ends_at = dayEndsAt;
@@ -457,6 +513,40 @@ export function registerSocketHandlers(io: Server): void {
         if (typeof callback === 'function') callback({ success: true, state });
       } catch (error: any) {
         console.error('[host_advance_phase error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
+      }
+    });
+
+    /**
+     * Handler for 'host_restart_game' (Play Again)
+     * Resets game state back to 'lobby', clears roles and statuses, and broadcasts state to the room
+     */
+    socket.on('host_restart_game', async (payload: { room_code?: string }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+        if (!roomCode) throw new Error('Room code required');
+        const state = await getGameState(roomCode);
+        if (!state) throw new Error('Room not found');
+
+        if (state.host_socket_id !== socket.id) {
+          throw new Error('Only the Host can restart the game');
+        }
+
+        const resetState = await resetGameState(roomCode);
+        console.log(`[Game Restarted] Room: ${roomCode} reset to lobby with ${resetState.players.length} players`);
+        broadcastGameState(io, resetState);
+
+        if (typeof callback === 'function') callback({ success: true, state: resetState });
+      } catch (error: any) {
+        console.error('[host_restart_game error]:', error.message);
         if (typeof callback === 'function') callback({ success: false, error: error.message });
       }
     });

@@ -1,9 +1,9 @@
 import React from 'react';
 import { useGameStore } from '../store/gameStore';
-import { Trophy, Skull, Users, RotateCcw, Crown } from 'lucide-react';
+import { Trophy, Skull, Users, RotateCcw, Crown, Play } from 'lucide-react';
 
 export const GameOverDisplay: React.FC = () => {
-  const { gameState, leaveRoom, createRoom, activeRoleMode } = useGameStore();
+  const { gameState, leaveRoom, createRoom, activeRoleMode, hostRestartGame } = useGameStore();
 
   if (!gameState) return null;
 
@@ -80,21 +80,31 @@ export const GameOverDisplay: React.FC = () => {
         </p>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={leaveRoom}
-            className="wope-btn-secondary px-6 py-3 text-xs font-semibold flex items-center gap-2 cursor-pointer"
-          >
-            <RotateCcw className="w-4 h-4" /> Return to Main Menu
-          </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {activeRoleMode === 'host' && (
+            <button
+              onClick={hostRestartGame}
+              className="wope-btn-primary px-6 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-xl shadow-[#3B82F6]/30 hover:scale-105 transition-all bg-[#3B82F6]"
+            >
+              <Play className="w-4 h-4 fill-white" /> Play Again (Keep Same Players)
+            </button>
+          )}
+
           {activeRoleMode === 'host' && (
             <button
               onClick={() => createRoom()}
-              className="wope-btn-primary px-6 py-3 text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-lg shadow-[#3B82F6]/25"
+              className="wope-btn-secondary px-5 py-3 text-xs font-semibold flex items-center gap-2 cursor-pointer"
             >
-              <Crown className="w-4 h-4" /> Host Another Game
+              <Crown className="w-4 h-4 text-[#EAB308]" /> New Room Code
             </button>
           )}
+
+          <button
+            onClick={leaveRoom}
+            className="wope-btn-secondary px-5 py-3 text-xs font-semibold flex items-center gap-2 cursor-pointer text-neutral-400 hover:text-white"
+          >
+            <RotateCcw className="w-4 h-4" /> Main Menu
+          </button>
         </div>
       </div>
 

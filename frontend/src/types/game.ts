@@ -95,6 +95,16 @@ export const DEFAULT_ROLE_SETTINGS: RoleSettings = {
 
 export type WinnerType = 'wolves' | 'villagers' | 'town' | 'jester' | 'executioner' | 'lovers' | null;
 
+export interface GameSettings {
+  discussion_time_seconds: number;
+  action_time_seconds: number;
+}
+
+export const DEFAULT_GAME_SETTINGS: GameSettings = {
+  discussion_time_seconds: 300,
+  action_time_seconds: 6
+};
+
 export interface GameState {
   room_code: string;
   phase: GamePhase;
@@ -105,8 +115,10 @@ export interface GameState {
   night_actions?: Record<string, any>;
   role_states?: RoleStates;
   role_settings?: RoleSettings;
+  settings?: GameSettings;
   players: Player[];
   lovers?: string[];
+  turn_number?: number;
   recent_deaths?: string[];
   last_night_killed?: string | null;
   last_day_eliminated?: string | null;

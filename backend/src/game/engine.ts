@@ -8,7 +8,7 @@ import {
   Player,
   WinnerType
 } from '../types/game';
-import { saveGameState, ROOM_TTL_SECONDS } from '../services/redis';
+import { saveGameState, getGameState, ROOM_TTL_SECONDS } from '../services/redis';
 
 export const getSocketRoomName = (roomCode: string): string => `lobby:${roomCode.toUpperCase()}`;
 
@@ -249,7 +249,8 @@ export function resolveDaybreak(state: GameState): void {
     state.timer_ends_at = null;
     state.day_ends_at = null;
   } else {
-    // Transition to morning_recap instead of straight to day
+    // Transition to morning_recap (or day with dynamic discussion timer)
+    const discussionDuration = (state.settings?.discussion_time_seconds || 300) * 1000;
     state.phase = 'morning_recap';
     state.timer_ends_at = null;
     state.day_ends_at = null;
@@ -356,6 +357,7 @@ export function sanitizeStateForHost(state: GameState): GameState {
     night_actions: {}, // Strictly stripped
     role_states: {}, // Strictly stripped
     role_settings: state.role_settings,
+    settings: state.settings,
     players: state.players.map((p) => ({
       socket_id: p.socket_id,
       name: p.name,
@@ -410,6 +412,7 @@ export function sanitizeStateForPlayer(state: GameState, playerId: string): Game
         : {})
     },
     role_settings: state.role_settings,
+    settings: state.settings,
     players: state.players.map((p) => {
       const isSelf = p.socket_id === playerId;
       return {
@@ -602,3 +605,56 @@ export async function handleNightAction(
 
   return state;
 }
+
+/**
+ * Resets an existing game back to the 'lobby' phase without forcing players to reconnect:
+ * - Fetches room state from Redis.
+ * - Resets phase to 'lobby', turn_number: 0, night_queue: [], night_actions: {},
+ *   role_states: {}, recent_deaths: [], lovers: [], active_role: null, active_role_priority: 0,
+ *   votes: {}, last_night_killed: null, last_day_eliminated: null, timer_ends_at: null,
+ *   day_ends_at: null, seer_result: null, executioner_target: null, and winner: null / undefined.
+ * - Keeps player socket_id, name, and id, resetting role: '' (or null) and is_alive: true, is_lover: false.
+ * - Saves wiped state back to Redis and returns it.
+ */
+export async function resetGameState(roomCode: string): Promise<GameState> {
+  const normalizedCode = roomCode.toUpperCase();
+  const state = await getGameState(normalizedCode);
+  if (!state) {
+    throw new Error(`Room '${normalizedCode}' not found`);
+  }
+
+  // Reset core state variables while retaining customized settings
+  state.phase = 'lobby';
+  state.turn_number = 0;
+  state.active_role = null;
+  state.active_role_priority = 0;
+  state.night_queue = [];
+  state.night_actions = {};
+  state.role_states = {};
+  state.recent_deaths = [];
+  state.lovers = [];
+  state.votes = {};
+  state.last_night_killed = null;
+  state.last_day_eliminated = null;
+  state.timer_ends_at = null;
+  state.day_ends_at = null;
+  state.winner = null;
+  state.seer_result = null;
+  state.executioner_target = null;
+  state.settings = state.settings || { discussion_time_seconds: 300, action_time_seconds: 6 };
+
+  // Reset players: keep socket_id, name, and identity, but reset role to default/null and is_alive: true
+  state.players = state.players.map((p) => ({
+    socket_id: p.socket_id,
+    name: p.name,
+    role: '' as RoleType,
+    is_alive: true,
+    is_lover: false
+  }));
+
+  // Save back to Redis
+  await saveGameState(state, ROOM_TTL_SECONDS);
+
+  return state;
+}
+
