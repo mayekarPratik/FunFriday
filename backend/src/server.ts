@@ -8,7 +8,7 @@ import { registerSocketHandlers } from './socket/handlers';
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const corsOrigin = process.env.FRONTEND_URL
   ? [process.env.FRONTEND_URL, 'http://localhost:5173']
   : ['http://localhost:5173'];
