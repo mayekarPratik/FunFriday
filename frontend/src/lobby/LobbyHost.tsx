@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import QRCode from 'react-qr-code';
 import { useCoreStore } from '../store/coreStore';
 import {
   Users,
@@ -11,7 +12,8 @@ import {
   Lock,
   Flame,
   Shield,
-  Skull
+  Skull,
+  QrCode as QrCodeIcon
 } from 'lucide-react';
 
 interface GameHubCard {
@@ -85,6 +87,10 @@ export const LobbyHost: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
 
+  const joinUrl = typeof window !== 'undefined' && roomCode
+    ? `${window.location.origin}/?code=${roomCode}`
+    : '';
+
   const handleCopyCode = () => {
     if (!roomCode) return;
     navigator.clipboard.writeText(roomCode);
@@ -104,9 +110,9 @@ export const LobbyHost: React.FC = () => {
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8 py-6 px-4">
       {/* Top Host Header Banner */}
-      <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 p-6 rounded-2xl bg-[#12141C] border border-[#1F2430] shadow-xl backdrop-blur-md">
+      <div className="w-full flex flex-col md:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-[#12141C] border border-[#1F2430] shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#191C28] border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shadow-lg">
+          <div className="w-14 h-14 rounded-2xl bg-[#191C28] border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shadow-lg shrink-0">
             <Tv className="w-7 h-7" />
           </div>
           <div>
@@ -122,28 +128,60 @@ export const LobbyHost: React.FC = () => {
             <h1 className="text-2xl font-bold text-white mt-1">
               Welcome to The Lobby
             </h1>
+            <p className="text-xs text-[#94A3B8] mt-0.5">
+              Players can scan the QR code on mobile or type the 4-letter code to join instantly.
+            </p>
           </div>
         </div>
 
-        {/* Room Code & Action Buttons */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleCopyCode}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#090A0F] border border-[#1F2430] hover:border-[#3B82F6]/50 transition text-white font-mono cursor-pointer"
-            title="Click to copy Room Code"
-          >
-            <span className="text-xs text-[#94A3B8]">Room:</span>
-            <span className="font-bold text-lg tracking-widest text-[#3B82F6]">{roomCode}</span>
-            {copied ? <Check className="w-4 h-4 text-[#22C55E]" /> : <Copy className="w-4 h-4 text-[#94A3B8]" />}
-          </button>
+        {/* QR Code & Room Code Section */}
+        <div className="flex items-center gap-4 bg-[#090A0F]/90 border border-[#1F2430] p-3.5 sm:px-5 sm:py-3 rounded-2xl shadow-inner">
+          {/* Jackbox-style Scan QR Code */}
+          {joinUrl && (
+            <div className="flex items-center gap-3 pr-3 sm:pr-4 border-r border-[#1F2430]">
+              <div className="p-1.5 bg-white rounded-xl shadow-lg shrink-0">
+                <QRCode
+                  value={joinUrl}
+                  size={64}
+                  level="M"
+                  style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                />
+              </div>
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6] font-bold flex items-center gap-1">
+                  <QrCodeIcon className="w-3 h-3" /> SCAN TO JOIN
+                </span>
+                <span className="text-[10px] text-[#94A3B8] max-w-[90px] leading-tight mt-0.5">
+                  Point phone camera at screen
+                </span>
+              </div>
+            </div>
+          )}
 
-          <button
-            onClick={leaveRoom}
-            className="p-3 rounded-xl bg-[#090A0F] border border-[#1F2430] hover:border-[#EF4444]/50 text-[#94A3B8] hover:text-[#EF4444] transition cursor-pointer"
-            title="Leave Lobby"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          {/* Room Code & Copy */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCopyCode}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#12141C] border border-[#1F2430] hover:border-[#3B82F6]/50 transition text-white font-mono cursor-pointer"
+              title="Click to copy Room Code"
+            >
+              <div className="text-left">
+                <span className="text-[9px] uppercase font-mono tracking-widest text-[#94A3B8] block -mb-0.5">
+                  ROOM
+                </span>
+                <span className="font-bold text-xl tracking-[0.2em] text-[#3B82F6]">{roomCode}</span>
+              </div>
+              {copied ? <Check className="w-4 h-4 text-[#22C55E] ml-1" /> : <Copy className="w-4 h-4 text-[#94A3B8] ml-1" />}
+            </button>
+
+            <button
+              onClick={leaveRoom}
+              className="p-3 rounded-xl bg-[#12141C] border border-[#1F2430] hover:border-[#EF4444]/50 text-[#94A3B8] hover:text-[#EF4444] transition cursor-pointer"
+              title="Leave Lobby"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -33,6 +33,7 @@ export interface CoreStore {
   // Actions
   initSocket: (serverUrl?: string) => void;
   setConnected: (connected: boolean) => void;
+  setRoomCode: (roomCode: string | null) => void;
   setActiveRoleMode: (mode: UserRoleMode) => void;
   setCurrentGameId: (gameId: string | null) => void;
   createRoom: () => Promise<CreateRoomResponse>;
@@ -65,6 +66,7 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
   },
 
   setConnected: (connected: boolean) => set({ isConnected: connected }),
+  setRoomCode: (code: string | null) => set({ roomCode: code }),
   setActiveRoleMode: (mode: UserRoleMode) => set({ activeRoleMode: mode }),
   setCurrentGameId: (gameId: string | null) => set({ currentGameId: gameId }),
 

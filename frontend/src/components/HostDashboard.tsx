@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import QRCode from 'react-qr-code';
 import { useGameStore } from '../store/gameStore';
 import type { RoleSettings } from '../types/game';
 import {
@@ -242,13 +243,34 @@ export const HostDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Big Room Code Display */}
-        <div className="flex items-center gap-3 bg-[#090A0F] border border-[#1F2430] p-3 sm:px-6 sm:py-4 rounded-xl z-0">
+        {/* Big Room Code & QR Display */}
+        <div className="flex items-center gap-4 bg-[#090A0F] border border-[#1F2430] p-3 sm:px-5 sm:py-3 rounded-xl z-0 shadow-inner">
+          {typeof window !== 'undefined' && gameState?.room_code && (
+            <div className="flex items-center gap-3 pr-3 sm:pr-4 border-r border-[#1F2430]">
+              <div className="p-1 bg-white rounded-lg shadow-md shrink-0">
+                <QRCode
+                  value={`${window.location.origin}/?code=${gameState.room_code}`}
+                  size={52}
+                  level="M"
+                  style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                />
+              </div>
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-[9px] font-mono uppercase tracking-widest text-[#3B82F6] font-bold">
+                  SCAN TO JOIN
+                </span>
+                <span className="text-[9px] text-[#94A3B8]">
+                  Mobile Camera
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="text-left">
-            <span className="text-[10px] uppercase font-mono tracking-widest text-[#94A3B8] block">
+            <span className="text-[9px] uppercase font-mono tracking-widest text-[#94A3B8] block -mb-0.5">
               ROOM CODE
             </span>
-            <span className="text-4xl sm:text-5xl font-black tracking-widest text-[#3B82F6] font-mono select-all">
+            <span className="text-3xl sm:text-4xl font-black tracking-widest text-[#3B82F6] font-mono select-all">
               {gameState.room_code}
             </span>
           </div>
@@ -258,7 +280,7 @@ export const HostDashboard: React.FC = () => {
             title="Copy Room Code"
             className="p-2.5 rounded-lg border border-[#1F2430] bg-[#12141C] hover:bg-[#191C28] text-[#94A3B8] hover:text-[#F8FAFC] transition cursor-pointer"
           >
-            {copied ? <Check className="w-5 h-5 text-[#22C55E]" /> : <Copy className="w-5 h-5" />}
+            {copied ? <Check className="w-4 h-4 text-[#22C55E]" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
       </div>

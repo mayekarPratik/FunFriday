@@ -33,9 +33,29 @@ export const LandingPage: React.FC = () => {
 
   const [mode, setMode] = useState<'join' | 'host'>('join');
   const [name, setName] = useState('');
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCodeState] = useState('');
+  const [isQrScanned, setIsQrScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Check URL query parameters for Jackbox QR Code join (?code=XXXX)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const codeParam = params.get('code') || params.get('room');
+    if (codeParam) {
+      const sanitized = codeParam.trim().toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+      if (sanitized.length === 4) {
+        setRoomCodeState(sanitized);
+        setMode('join');
+        setIsQrScanned(true);
+
+        // Clean up the URL in address bar without reloading
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+  }, []);
 
   // Rotating Flavor Text
   const [flavorIndex, setFlavorIndex] = useState(0);
@@ -127,7 +147,7 @@ export const LandingPage: React.FC = () => {
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
-    setRoomCode(val);
+    setRoomCodeState(val);
   };
 
   return (
@@ -246,27 +266,52 @@ export const LandingPage: React.FC = () => {
           {/* MODE: JOIN GAME (Player) */}
           {mode === 'join' && (
             <form onSubmit={handleJoin} className="flex flex-col gap-4">
-              {/* Room Code Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-mono uppercase tracking-wider text-[#94A3B8] flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-[#3B82F6]" /> Room Code
-                  </span>
-                  <span className="text-[10px] text-[#64748B]">4 letters</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={roomCode}
-                    onChange={handleRoomCodeChange}
-                    placeholder="WOLF"
-                    maxLength={4}
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                    className="w-full bg-[#090A0F] border border-[#1F2430] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] rounded-xl py-3.5 px-4 text-center font-mono font-bold text-2xl tracking-[0.3em] uppercase text-white placeholder:text-[#334155] outline-none transition"
-                  />
+              {/* Room Code: Auto-locked Pill when QR is scanned, or editable input */}
+              {isQrScanned ? (
+                <div className="p-3.5 rounded-xl bg-[#090A0F] border border-[#3B82F6]/40 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-mono tracking-wider text-[#3B82F6] font-bold block">
+                        QR Code Scanned
+                      </span>
+                      <span className="text-xs text-[#94A3B8]">
+                        Joining Room: <strong className="font-mono text-white tracking-widest text-sm">{roomCode}</strong>
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQrScanned(false)}
+                    className="text-[10px] font-mono text-[#94A3B8] hover:text-white underline cursor-pointer"
+                  >
+                    Change Code
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono uppercase tracking-wider text-[#94A3B8] flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-[#3B82F6]" /> Room Code
+                    </span>
+                    <span className="text-[10px] text-[#64748B]">4 letters</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={roomCode}
+                      onChange={handleRoomCodeChange}
+                      placeholder="WOLF"
+                      maxLength={4}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      className="w-full bg-[#090A0F] border border-[#1F2430] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] rounded-xl py-3.5 px-4 text-center font-mono font-bold text-2xl tracking-[0.3em] uppercase text-white placeholder:text-[#334155] outline-none transition"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Player Nickname Input */}
               <div className="space-y-1.5">
@@ -283,6 +328,7 @@ export const LandingPage: React.FC = () => {
                   placeholder="e.g. Sherlock"
                   maxLength={12}
                   autoComplete="off"
+                  autoFocus={isQrScanned}
                   className="w-full bg-[#090A0F] border border-[#1F2430] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] rounded-xl py-3 px-4 text-sm font-medium text-white placeholder:text-[#334155] outline-none transition"
                 />
               </div>
