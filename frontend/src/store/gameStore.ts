@@ -12,7 +12,7 @@ import type {
 } from '../types/game';
 import { DEFAULT_ROLE_SETTINGS, DEFAULT_GAME_SETTINGS } from '../types/game';
 
-const DEFAULT_SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 export type UserRoleMode = 'host' | 'player' | null;
 
@@ -77,7 +77,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setActiveRoleMode: (mode: UserRoleMode) => set({ activeRoleMode: mode }),
 
-  initSocket: (serverUrl = DEFAULT_SERVER_URL) => {
+  initSocket: (serverUrl = backendUrl) => {
     const currentSocket = get().socket;
     if (currentSocket && currentSocket.connected) {
       return;

@@ -8,7 +8,7 @@ import type {
   JoinRoomResponse
 } from '../types/game';
 
-const DEFAULT_SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 export type UserRoleMode = 'host' | 'player' | null;
 
@@ -77,7 +77,7 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
     }));
   },
 
-  initSocket: (serverUrl = DEFAULT_SERVER_URL) => {
+  initSocket: (serverUrl = backendUrl) => {
     const currentSocket = get().socket;
     if (currentSocket && currentSocket.connected) {
       return;

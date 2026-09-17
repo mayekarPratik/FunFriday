@@ -9,10 +9,16 @@ import { registerSocketHandlers } from './socket/handlers';
 dotenv.config();
 
 const PORT = process.env.PORT || 3001;
-const CLIENT_URL = process.env.CLIENT_URL || '*';
+const corsOrigin = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL, 'http://localhost:5173']
+  : ['http://localhost:5173'];
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: corsOrigin,
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Health & status endpoints
@@ -24,8 +30,9 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL,
-    methods: ['GET', 'POST']
+    origin: process.env.FRONTEND_URL ? [process.env.FRONTEND_URL, 'http://localhost:5173'] : ['http://localhost:5173'],
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
