@@ -221,39 +221,39 @@ export const App: React.FC = () => {
 
       {/* Header bar (Visible in Lobby / Games when roomCode exists and not in fullscreen pitch-black screens) */}
       {hasRoomCode && (
-        <header className="h-16 shrink-0 border-b border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
-              <Shield className="w-4 h-4" />
+        <header className="h-14 sm:h-16 shrink-0 border-b border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shrink-0">
+              <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold tracking-wider text-sm uppercase text-[#F8FAFC]">
+              <span className="font-bold tracking-wider text-xs sm:text-sm uppercase text-[#F8FAFC]">
                 The Lobby
               </span>
-              <span className="text-[10px] font-mono text-[#94A3B8] -mt-1">
+              <span className="text-[9px] sm:text-[10px] font-mono text-[#94A3B8] -mt-0.5 sm:-mt-1">
                 {currentGameId ? `${currentGameId.toUpperCase()} MODE` : pendingGameId ? `${pendingGameId.toUpperCase()} LOADING...` : 'CORE HUB'}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Connection Status Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1F2430] bg-[#12141C]/80 backdrop-blur-md text-xs font-mono">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#1F2430] bg-[#12141C]/80 backdrop-blur-md text-[10px] sm:text-xs font-mono">
               {isConnected ? (
                 <>
-                  <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-                  <Wifi className="w-3.5 h-3.5 text-[#22C55E]" />
-                  <span className="text-[#94A3B8]">Connected</span>
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#22C55E] animate-pulse" />
+                  <Wifi className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#22C55E]" />
+                  <span className="text-[#94A3B8] hidden sm:inline">Connected</span>
                 </>
               ) : isConnecting ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 text-[#EAB308] animate-spin" />
-                  <span className="text-[#EAB308]">Connecting...</span>
+                  <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#EAB308] animate-spin" />
+                  <span className="text-[#EAB308] hidden sm:inline">Connecting...</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-3.5 h-3.5 text-[#EF4444]" />
-                  <span className="text-[#EF4444]">Offline</span>
+                  <WifiOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#EF4444]" />
+                  <span className="text-[#EF4444] hidden sm:inline">Offline</span>
                 </>
               )}
             </div>
@@ -262,11 +262,11 @@ export const App: React.FC = () => {
       )}
 
       {/* Main Container */}
-      <main className="flex-1 min-h-0 w-full flex flex-col justify-center items-center p-3 sm:p-6 overflow-hidden">
-        <div className="w-full max-w-5xl h-full min-h-0 flex flex-col items-center justify-center">
+      <main className="flex-1 min-h-0 w-full flex flex-col items-center p-3 sm:p-6 overflow-y-auto custom-scrollbar">
+        <div className="w-full max-w-5xl my-auto min-h-min flex flex-col items-center justify-center">
           {/* Dynamic Router Outlet wrapped in CRT TV animated container */}
           <div
-            className={`w-full h-full min-h-0 flex flex-col items-center justify-center origin-center ${tvState === 'turning_off'
+            className={`w-full min-h-min flex flex-col items-center justify-center origin-center ${tvState === 'turning_off'
                 ? 'animate-crt-off'
                 : tvState === 'turning_on'
                   ? 'animate-crt-on'
