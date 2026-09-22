@@ -8,10 +8,11 @@ dist/
 frontend/dist/
 backend/dist/
 
-# Environment variables (NEVER COMMIT THESE)
+# Environment variables and secrets (NEVER COMMIT THESE)
 .env
 frontend/.env
 backend/.env
+.agents/mcp_config.json
 
 # OS generated files
 .DS_Store
