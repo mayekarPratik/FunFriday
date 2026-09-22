@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCoreStore } from '../store/coreStore';
-import { Smartphone, Shield, LogOut, CheckCircle2 } from 'lucide-react';
+import { Smartphone, Shield, LogOut, CheckCircle2, BookOpen } from 'lucide-react';
+import { RulesModal } from '../components/RulesModal';
 
 export const LobbyClient: React.FC = () => {
   const { roomCode, myPlayerName, players, leaveRoom } = useCoreStore();
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   return (
     <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 relative z-0 selection:bg-[#3B82F6]/30 overflow-hidden box-border">
@@ -18,7 +20,7 @@ export const LobbyClient: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-2 z-10">
+          <div className="space-y-2 z-10 flex flex-col items-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] text-xs font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" /> Connected to The Lobby
             </div>
@@ -29,6 +31,15 @@ export const LobbyClient: React.FC = () => {
             <p className="text-xs text-[#94A3B8] max-w-xs mx-auto leading-relaxed">
               Waiting for the Host to select a game, <span className="font-semibold text-[#F8FAFC]">{myPlayerName}</span>...
             </p>
+
+            <button
+              type="button"
+              onClick={() => setIsRulesModalOpen(true)}
+              className="text-xs text-slate-400 hover:text-white underline underline-offset-4 decoration-slate-600 hover:decoration-[#3B82F6] transition cursor-pointer pt-1 inline-flex items-center gap-1 font-medium"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#3B82F6]" />
+              How to play?
+            </button>
           </div>
 
           {/* Room & Status Info Pill */}
@@ -69,6 +80,12 @@ export const LobbyClient: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Rules Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
+      />
     </div>
   );
 };

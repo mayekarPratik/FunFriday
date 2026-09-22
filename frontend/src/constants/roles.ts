@@ -19,7 +19,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-red-500/20',
     badgeText: 'text-red-400',
     badgeBorder: 'border-red-500/40',
-    description: 'Hunts innocent villagers in secret with the wolf pack each night. Wins when wolves equal or outnumber living townspeople.',
+    description: 'Eliminate the village. Blend in during the day.',
     isPassiveAtNight: false
   },
   seer: {
@@ -30,7 +30,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-blue-500/20',
     badgeText: 'text-blue-400',
     badgeBorder: 'border-blue-500/40',
-    description: 'Awakens each night to inspect the secret identity and alignment of one living player.',
+    description: 'Inspect one player each night to reveal their true allegiance.',
     isPassiveAtNight: false
   },
   doctor: {
@@ -41,7 +41,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-emerald-500/20',
     badgeText: 'text-emerald-400',
     badgeBorder: 'border-emerald-500/40',
-    description: 'Chooses one player to protect each night from death.',
+    description: 'Choose one player to protect from the wolves each night.',
     isPassiveAtNight: false
   },
   witch: {
@@ -52,7 +52,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-purple-500/20',
     badgeText: 'text-purple-400',
     badgeBorder: 'border-purple-500/40',
-    description: 'Wields two one-time potions: a healing potion to revive the wolves’ victim and a lethal poison potion.',
+    description: 'Holds one poison potion and one revive potion to use at night.',
     isPassiveAtNight: false
   },
   cupid: {
@@ -63,7 +63,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-pink-500/20',
     badgeText: 'text-pink-400',
     badgeBorder: 'border-pink-500/40',
-    description: 'Awakens on Night 1 to bind two players together in love. If one lover perishes, the other dies of a broken heart.',
+    description: 'Link two players together on the first night. If one dies, the other dies too.',
     isPassiveAtNight: false
   },
   sheriff: {
@@ -74,7 +74,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-blue-500/20',
     badgeText: 'text-blue-400',
     badgeBorder: 'border-blue-500/40',
-    description: 'You can wake up at night to shoot one player per game. Choose wisely, or you might kill an innocent.',
+    description: 'A trusted village leader whose daytime vote counts as two.',
     isPassiveAtNight: false
   },
   villager: {
@@ -85,7 +85,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-slate-500/20',
     badgeText: 'text-slate-300',
     badgeBorder: 'border-slate-500/40',
-    description: 'A humble resident with no special night abilities. Solves the mystery and eliminates wolves through daily trials.',
+    description: 'Deduce who the wolves are and vote them out.',
     isPassiveAtNight: true
   },
   jester: {
@@ -96,7 +96,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-purple-500/20',
     badgeText: 'text-purple-400',
     badgeBorder: 'border-purple-500/40',
-    description: 'A chaotic trickster whose sole victory condition is to convince the village to execute them during the day trial.',
+    description: 'A neutral chaotic player. Trick the village into voting you out to win.',
     isPassiveAtNight: true
   },
   executioner: {
@@ -107,7 +107,7 @@ export const ROLES: Record<string, RoleDefinition> = {
     badgeBg: 'bg-purple-500/20',
     badgeText: 'text-purple-400',
     badgeBorder: 'border-purple-500/40',
-    description: 'Assigned a secret innocent townsperson as their target. Wins immediately if their target is voted out during the day trial. Converts into a Jester if their target dies at night.',
+    description: 'Assigned a specific target. Trick the village into voting your target out to win.',
     isPassiveAtNight: true
   }
 };

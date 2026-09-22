@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useWerewolfStore } from '../werewolfStore';
 import { useCoreStore } from '../../../store/coreStore';
-import { Smartphone, Shield, LogOut, CheckCircle2 } from 'lucide-react';
+import { Smartphone, Shield, LogOut, CheckCircle2, BookOpen } from 'lucide-react';
+import { RulesModal } from '../../../components/RulesModal';
 
 export const PlayerWaiting: React.FC = () => {
   const { gameState } = useWerewolfStore();
   const { roomCode, myPlayerName, leaveRoom } = useCoreStore();
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   const displayRoomCode = roomCode || gameState?.room_code;
   const playerCount = gameState?.players?.length || 1;
@@ -24,7 +26,7 @@ export const PlayerWaiting: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-2 z-10">
+          <div className="space-y-2 z-10 flex flex-col items-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] text-xs font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" /> In Werewolf Lobby
             </div>
@@ -35,6 +37,15 @@ export const PlayerWaiting: React.FC = () => {
             <p className="text-xs text-[#94A3B8] max-w-xs mx-auto">
               Sit tight, <span className="font-semibold text-[#F8FAFC]">{myPlayerName}</span>. The host is configuring roles and will start the match shortly.
             </p>
+
+            <button
+              type="button"
+              onClick={() => setIsRulesModalOpen(true)}
+              className="text-xs text-slate-400 hover:text-white underline underline-offset-4 decoration-slate-600 hover:decoration-red-400 transition cursor-pointer pt-1 inline-flex items-center gap-1 font-medium"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-red-400" />
+              How to play?
+            </button>
           </div>
 
           {/* Room & Status Info Pill */}
@@ -75,6 +86,12 @@ export const PlayerWaiting: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Werewolf Rules Guide Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
+      />
     </div>
   );
 };

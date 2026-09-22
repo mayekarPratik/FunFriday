@@ -23,7 +23,8 @@ import {
   Sliders,
   Clock,
   Shield,
-  ArrowLeft
+  ArrowLeft,
+  ChevronDown
 } from 'lucide-react';
 
 export const ROLE_CONFIG_ORDER: (keyof RoleSettings)[] = [
@@ -31,11 +32,11 @@ export const ROLE_CONFIG_ORDER: (keyof RoleSettings)[] = [
   'seer',
   'doctor',
   'villager',
-  'sheriff',
-  'jester',
   'witch',
-  'executioner',
-  'cupid'
+  'sheriff',
+  'cupid',
+  'jester',
+  'executioner'
 ];
 
 interface RoleConfigItem {
@@ -52,7 +53,7 @@ export const ROLE_CONFIG_MAP: Record<string, RoleConfigItem> = {
   werewolf: {
     id: 'werewolf',
     name: 'Werewolf',
-    desc: 'Hunts villagers in secret each night',
+    desc: 'Eliminate the village. Blend in during the day.',
     icon: Skull,
     color: 'text-red-500',
     bgColor: 'bg-red-500/10',
@@ -61,7 +62,7 @@ export const ROLE_CONFIG_MAP: Record<string, RoleConfigItem> = {
   seer: {
     id: 'seer',
     name: 'Seer',
-    desc: 'Investigates one player identity each night',
+    desc: 'Inspect one player each night to reveal their true allegiance.',
     icon: Eye,
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-500/10',
@@ -70,7 +71,7 @@ export const ROLE_CONFIG_MAP: Record<string, RoleConfigItem> = {
   doctor: {
     id: 'doctor',
     name: 'Doctor',
-    desc: 'Protects one player from death each night',
+    desc: 'Choose one player to protect from the wolves each night.',
     icon: HeartPulse,
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10',
@@ -79,56 +80,56 @@ export const ROLE_CONFIG_MAP: Record<string, RoleConfigItem> = {
   villager: {
     id: 'villager',
     name: 'Villager',
-    desc: 'Simple townsperson seeking truth by day',
+    desc: 'Deduce who the wolves are and vote them out.',
     icon: Shield,
     color: 'text-slate-400',
     bgColor: 'bg-slate-500/10',
     borderColor: 'border-slate-500/30'
   },
-  sheriff: {
-    id: 'sheriff',
-    name: 'Sheriff',
-    desc: 'Holds a single lethal silver bullet',
-    icon: Target,
-    color: 'text-amber-400',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30'
-  },
-  jester: {
-    id: 'jester',
-    name: 'Jester',
-    desc: 'Wins solo if executed during day voting',
-    icon: Sparkles,
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/30'
-  },
   witch: {
     id: 'witch',
     name: 'Witch',
-    desc: 'One heal potion & one poison potion per match',
+    desc: 'Holds one poison potion and one revive potion to use at night.',
     icon: FlaskConical,
     color: 'text-fuchsia-400',
     bgColor: 'bg-fuchsia-500/10',
     borderColor: 'border-fuchsia-500/30'
   },
-  executioner: {
-    id: 'executioner',
-    name: 'Executioner',
-    desc: 'Wins if secret marked target is voted out by day',
+  sheriff: {
+    id: 'sheriff',
+    name: 'Sheriff',
+    desc: 'A trusted village leader whose daytime vote counts as two.',
     icon: Target,
-    color: 'text-rose-400',
-    bgColor: 'bg-rose-500/10',
-    borderColor: 'border-rose-500/30'
+    color: 'text-amber-400',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30'
   },
   cupid: {
     id: 'cupid',
     name: 'Cupid',
-    desc: 'Links two players as lovers on night 1',
+    desc: 'Link two players together on the first night. If one dies, the other dies too.',
     icon: Heart,
     color: 'text-pink-400',
     bgColor: 'bg-pink-500/10',
     borderColor: 'border-pink-500/30'
+  },
+  jester: {
+    id: 'jester',
+    name: 'Jester',
+    desc: 'A neutral chaotic player. Trick the village into voting you out to win.',
+    icon: Sparkles,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30'
+  },
+  executioner: {
+    id: 'executioner',
+    name: 'Executioner',
+    desc: 'Assigned a specific target. Trick the village into voting your target out to win.',
+    icon: Target,
+    color: 'text-rose-400',
+    bgColor: 'bg-rose-500/10',
+    borderColor: 'border-rose-500/30'
   }
 };
 
@@ -149,6 +150,15 @@ export const HostDashboard: React.FC = () => {
 
   // Active Tab: 'roles' (deck builder) vs 'timers' (custom rules)
   const [activeTab, setActiveTab] = useState<'roles' | 'timers'>('roles');
+  // Expandable accordion state for Role Desk items
+  const [expandedRoles, setExpandedRoles] = useState<Record<string, boolean>>({});
+
+  const toggleRoleExpand = (roleKey: string) => {
+    setExpandedRoles((prev) => ({
+      ...prev,
+      [roleKey]: !prev[roleKey]
+    }));
+  };
 
   const displayRoomCode = roomCode || gameState?.room_code;
   const currentPlayers = players.length > 0 ? players : (gameState?.players || []);
@@ -308,51 +318,78 @@ export const HostDashboard: React.FC = () => {
 
           {/* TAB 1: ROLE DECK BUILDER */}
           {activeTab === 'roles' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
               {ROLE_CONFIG_ORDER.map((roleKey) => {
                 const config = ROLE_CONFIG_MAP[roleKey];
                 const count = Number(role_settings[roleKey] || 0);
                 const Icon = config.icon;
+                const isExpanded = Boolean(expandedRoles[String(roleKey)]);
 
                 return (
                   <div
                     key={String(roleKey)}
-                    className={`p-4 rounded-2xl bg-[#12141C] border ${
+                    onClick={() => toggleRoleExpand(String(roleKey))}
+                    className={`p-3.5 sm:p-4 rounded-2xl bg-[#12141C] border ${
                       count > 0 ? config.borderColor : 'border-[#1F2430]'
-                    } flex items-center justify-between gap-3 shadow-md transition`}
+                    } flex flex-col justify-between shadow-md transition-all duration-300 cursor-pointer select-none group hover:border-[#3B82F6]/40`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl ${config.bgColor} flex items-center justify-center ${config.color}`}>
-                        <Icon className="w-5 h-5" />
+                    {/* Top Row: Icon, Name + Chevron, Counter Block */}
+                    <div className="flex items-center justify-between gap-3 w-full">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl ${config.bgColor} flex items-center justify-center ${config.color} shrink-0`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-bold text-sm text-white truncate">{config.name}</span>
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 text-[#94A3B8] transition-transform duration-300 shrink-0 ${
+                              isExpanded ? 'rotate-180 text-white' : 'group-hover:text-slate-300'
+                            }`}
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-white">{config.name}</span>
-                        <span className="text-[11px] text-[#94A3B8] line-clamp-1">{config.desc}</span>
+
+                      {/* Counter Buttons - stopPropagation so tapping +/- doesn't toggle accordion */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1.5 sm:gap-2 bg-[#090A0F] border border-[#1F2430] rounded-xl p-1 shrink-0"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleRoleChange(roleKey, -1)}
+                          disabled={count <= 0}
+                          className="w-7 h-7 rounded-lg bg-[#12141C] hover:bg-[#191C28] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white cursor-pointer transition"
+                          aria-label={`Decrease ${config.name} count`}
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+
+                        <span className="w-6 text-center font-mono font-bold text-sm text-white">
+                          {count}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRoleChange(roleKey, 1)}
+                          className="w-7 h-7 rounded-lg bg-[#12141C] hover:bg-[#191C28] flex items-center justify-center text-white cursor-pointer transition"
+                          aria-label={`Increase ${config.name} count`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Counter Buttons */}
-                    <div className="flex items-center gap-2 bg-[#090A0F] border border-[#1F2430] rounded-xl p-1">
-                      <button
-                        type="button"
-                        onClick={() => handleRoleChange(roleKey, -1)}
-                        disabled={count <= 0}
-                        className="w-7 h-7 rounded-lg bg-[#12141C] hover:bg-[#191C28] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white cursor-pointer transition"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-
-                      <span className="w-6 text-center font-mono font-bold text-sm text-white">
-                        {count}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRoleChange(roleKey, 1)}
-                        className="w-7 h-7 rounded-lg bg-[#12141C] hover:bg-[#191C28] flex items-center justify-center text-white cursor-pointer transition"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
+                    {/* Expandable Description Area */}
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out overflow-hidden ${
+                        isExpanded ? 'grid-rows-[1fr] opacity-100 pt-3 mt-2 border-t border-[#1F2430]/70' : 'grid-rows-[0fr] opacity-0'
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <p className="text-xs text-slate-300 sm:text-slate-400 leading-relaxed break-words">
+                          {config.desc}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );

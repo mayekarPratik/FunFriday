@@ -15,8 +15,10 @@ import {
   Skull,
   QrCode as QrCodeIcon,
   Maximize2,
-  X
+  X,
+  Info
 } from 'lucide-react';
+import { RulesModal } from '../components/RulesModal';
 
 interface GameHubCard {
   id: string;
@@ -97,6 +99,7 @@ export const LobbyHost: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [rulesGameType, setRulesGameType] = useState<'werewolf' | 'mafia' | null>(null);
 
   const joinUrl = typeof window !== 'undefined' && roomCode
     ? `${window.location.origin}/?code=${roomCode}`
@@ -296,17 +299,34 @@ export const LobbyHost: React.FC = () => {
                         <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
 
-                      {game.badge && (
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold tracking-wider shrink-0 ${
-                            game.enabled
-                              ? 'bg-red-500/10 border border-red-500/30 text-red-400'
-                              : 'bg-slate-800 border border-slate-700 text-slate-400'
-                          }`}
-                        >
-                          {game.badge}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {(game.id === 'werewolf' || game.id === 'mafia') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRulesGameType(game.id as 'werewolf' | 'mafia');
+                            }}
+                            className="w-7 h-7 rounded-full bg-[#090A0F]/90 border border-[#1F2430] hover:border-[#3B82F6] text-[#94A3B8] hover:text-white flex items-center justify-center transition cursor-pointer shadow-sm hover:scale-105"
+                            title={`How to Play ${game.name}`}
+                            aria-label={`How to play ${game.name} rules`}
+                          >
+                            <Info className="w-3.5 h-3.5 text-[#3B82F6]" />
+                          </button>
+                        )}
+
+                        {game.badge && (
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold tracking-wider ${
+                              game.enabled
+                                ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+                                : 'bg-slate-800 border border-slate-700 text-slate-400'
+                            }`}
+                          >
+                            {game.badge}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="min-w-0 w-full">
@@ -405,6 +425,13 @@ export const LobbyHost: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Rules Guide Modal */}
+      <RulesModal
+        isOpen={rulesGameType !== null}
+        onClose={() => setRulesGameType(null)}
+        gameType={rulesGameType || 'werewolf'}
+      />
     </div>
   );
 };
