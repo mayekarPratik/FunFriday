@@ -10,8 +10,7 @@ import {
   User,
   Sparkles,
   Monitor,
-  Play,
-  AlertCircle
+  Play
 } from 'lucide-react';
 
 const FLAVOR_TEXTS = [
@@ -27,9 +26,7 @@ export const LandingPage: React.FC = () => {
     isConnected,
     isConnecting,
     createRoom,
-    joinRoom,
-    lastActionError,
-    clearErrors
+    joinRoom
   } = useCoreStore();
 
   const [mode, setMode] = useState<'join' | 'host'>('join');
@@ -37,7 +34,6 @@ export const LandingPage: React.FC = () => {
   const [roomCode, setRoomCodeState] = useState('');
   const [isQrScanned, setIsQrScanned] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
 
   // Check URL query parameters for Jackbox QR Code join (?code=XXXX)
   useEffect(() => {
@@ -99,34 +95,24 @@ export const LandingPage: React.FC = () => {
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
-    clearErrors();
 
     const rawCode = roomCode.trim().toUpperCase();
     const trimmedName = name.trim();
 
     if (!rawCode) {
-      const err = 'Please enter a 4-letter Room Code';
-      setLocalError(err);
-      toast.error(err);
+      toast.error('Please enter a 4-letter Room Code', { id: 'join_error' });
       return;
     }
     if (rawCode.length !== 4) {
-      const err = 'Room code must be exactly 4 characters';
-      setLocalError(err);
-      toast.error(err);
+      toast.error('Room code must be exactly 4 characters', { id: 'join_error' });
       return;
     }
     if (!trimmedName) {
-      const err = 'Please enter your nickname';
-      setLocalError(err);
-      toast.error(err);
+      toast.error('Please enter your nickname', { id: 'join_error' });
       return;
     }
     if (trimmedName.length > 12) {
-      const err = 'Player name must be 12 characters or less';
-      setLocalError(err);
-      toast.error(err);
+      toast.error('Player name must be 12 characters or less', { id: 'join_error' });
       return;
     }
 
@@ -139,21 +125,17 @@ export const LandingPage: React.FC = () => {
 
     if (!res.success) {
       const errMsg = res.error || 'Failed to join room. Please check the code.';
-      setLocalError(errMsg);
       toast.error(errMsg, { id: 'join_error' });
     }
   };
 
   const handleHost = async () => {
-    setLocalError(null);
-    clearErrors();
     setLoading(true);
     const res = await createRoom();
     setLoading(false);
 
     if (!res.success) {
       const errMsg = res.error || 'Failed to create room. Please try again.';
-      setLocalError(errMsg);
       toast.error(errMsg, { id: 'host_error' });
     }
   };
@@ -235,11 +217,7 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-2 p-1 bg-[#090A0F] rounded-xl border border-[#1F2430]">
             <button
               type="button"
-              onClick={() => {
-                setMode('join');
-                setLocalError(null);
-                clearErrors();
-              }}
+              onClick={() => setMode('join')}
               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 mode === 'join'
                   ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
@@ -252,11 +230,7 @@ export const LandingPage: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => {
-                setMode('host');
-                setLocalError(null);
-                clearErrors();
-              }}
+              onClick={() => setMode('host')}
               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 mode === 'host'
                   ? 'bg-[#191C28] text-white shadow-md border border-[#1F2430]'
@@ -267,14 +241,6 @@ export const LandingPage: React.FC = () => {
               <span>Host on TV</span>
             </button>
           </div>
-
-          {/* Error Message Display */}
-          {(localError || lastActionError) && (
-            <div className="p-3.5 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 text-xs text-[#EF4444] flex items-center gap-2.5 animate-shake">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="font-medium">{localError || lastActionError}</span>
-            </div>
-          )}
 
           {/* MODE: JOIN GAME (Player) */}
           {mode === 'join' && (

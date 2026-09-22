@@ -6,7 +6,7 @@ import { LobbyHost } from './lobby/LobbyHost';
 import { LobbyClient } from './lobby/LobbyClient';
 import { ServerWakeupModal } from './components/ServerWakeupModal';
 import { InteractiveBackground } from './components/InteractiveBackground';
-import { Wifi, WifiOff, RefreshCw, AlertCircle, Shield } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, Shield } from 'lucide-react';
 
 import { useMafiaStore } from './games/mafia/mafiaStore';
 import { useWerewolfStore } from './games/werewolf/werewolfStore';
@@ -20,14 +20,11 @@ export const App: React.FC = () => {
     socket,
     isConnected,
     isConnecting,
-    connectionError,
     roomCode,
     activeRoleMode,
     currentGameId,
     setCurrentGameId,
-    lastActionError,
-    initSocket,
-    clearErrors
+    initSocket
   } = useCoreStore();
 
   const [tvState, setTvState] = useState<'idle' | 'turning_off' | 'turning_on'>('idle');
@@ -267,25 +264,6 @@ export const App: React.FC = () => {
       {/* Main Container */}
       <main className="flex-1 min-h-0 w-full flex flex-col justify-center items-center p-3 sm:p-6 overflow-hidden">
         <div className="w-full max-w-5xl h-full min-h-0 flex flex-col items-center justify-center">
-          {/* Error Banner */}
-          {(connectionError || lastActionError) && (
-            <div className="w-full max-w-md shrink-0 mb-4 p-4 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 backdrop-blur-md text-xs flex items-start gap-3 text-[#EF4444]">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-semibold">{connectionError || lastActionError}</p>
-                <button
-                  onClick={() => {
-                    clearErrors();
-                    if (connectionError) initSocket();
-                  }}
-                  className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#EF4444]/20 hover:bg-[#EF4444]/30 font-medium transition cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Dismiss & Retry
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Dynamic Router Outlet wrapped in CRT TV animated container */}
           <div
             className={`w-full h-full min-h-0 flex flex-col items-center justify-center origin-center ${tvState === 'turning_off'

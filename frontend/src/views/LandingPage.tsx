@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { useGameStore } from '../store/gameStore';
 import {
   Smartphone,
@@ -10,8 +11,7 @@ import {
   Sparkles,
   Monitor,
   Shield,
-  Play,
-  AlertCircle
+  Play
 } from 'lucide-react';
 
 const FLAVOR_TEXTS = [
@@ -28,7 +28,6 @@ export const LandingPage: React.FC = () => {
     isConnecting,
     createRoom,
     joinRoom,
-    lastActionError,
     clearErrors
   } = useGameStore();
 
@@ -36,7 +35,6 @@ export const LandingPage: React.FC = () => {
   const [name, setName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
 
   // Rotating Flavor Text
   const [flavorIndex, setFlavorIndex] = useState(0);
@@ -79,24 +77,23 @@ export const LandingPage: React.FC = () => {
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
     clearErrors();
 
     const trimmedName = name.trim();
     const rawCode = roomCode.replace(/-/g, '').trim().toUpperCase();
 
     if (!rawCode || rawCode.length !== 4) {
-      setLocalError('Room code must be 4 letters/numbers');
+      toast.error('Room code must be 4 letters/numbers');
       return;
     }
 
     if (!trimmedName) {
-      setLocalError('Please enter your player name');
+      toast.error('Please enter your player name');
       return;
     }
 
     if (trimmedName.length > 12) {
-      setLocalError('Player name must be 12 characters or less');
+      toast.error('Player name must be 12 characters or less');
       return;
     }
 
@@ -108,24 +105,22 @@ export const LandingPage: React.FC = () => {
     setLoading(false);
 
     if (!res.success) {
-      setLocalError(res.error || 'Failed to join room. Please check the code.');
+      toast.error(res.error || 'Failed to join room. Please check the code.');
     }
   };
 
   const handleHost = async () => {
-    setLocalError(null);
     clearErrors();
     setLoading(true);
     const res = await createRoom();
     setLoading(false);
 
     if (!res.success) {
-      setLocalError(res.error || 'Failed to create room. Please try again.');
+      toast.error(res.error || 'Failed to create room. Please try again.');
     }
   };
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalError(null);
     const rawValue = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
     const formattedValue = rawValue.split('').join('-');
     setRoomCode(formattedValue);
@@ -205,7 +200,6 @@ export const LandingPage: React.FC = () => {
             type="button"
             onClick={() => {
               setMode('join');
-              setLocalError(null);
               clearErrors();
             }}
             className={`flex-1 py-2 px-4 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${mode === 'join'
@@ -221,7 +215,6 @@ export const LandingPage: React.FC = () => {
             type="button"
             onClick={() => {
               setMode('host');
-              setLocalError(null);
               clearErrors();
             }}
             className={`flex-1 py-2 px-4 rounded-full text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${mode === 'host'
@@ -233,16 +226,6 @@ export const LandingPage: React.FC = () => {
             <span>Host Game</span>
           </button>
         </div>
-
-        {/* Error Notification */}
-        {(localError || lastActionError) && (
-          <div className="w-full mb-4 p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-xs flex items-start gap-2.5 text-red-400 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div className="flex-1 text-left font-medium">
-              {localError || lastActionError}
-            </div>
-          </div>
-        )}
 
         {/* Dynamic Form Content */}
         <div className="w-full">
@@ -276,7 +259,6 @@ export const LandingPage: React.FC = () => {
                   maxLength={12}
                   value={name}
                   onChange={(e) => {
-                    setLocalError(null);
                     setName(e.target.value.slice(0, 12));
                   }}
                   placeholder="Your nickname (max 12 chars)"

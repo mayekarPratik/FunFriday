@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useWerewolfStore } from '../werewolfStore';
 import { useCoreStore } from '../../../store/coreStore';
 import type { RoleSettings, Player } from '../../../types/game';
@@ -20,7 +21,6 @@ import {
   Sparkles,
   Target,
   Sliders,
-  AlertTriangle,
   Clock,
   Shield,
   ArrowLeft
@@ -139,15 +139,13 @@ export const HostDashboard: React.FC = () => {
     settings,
     updateRoleSettings,
     updateRoomSettings,
-    startGame,
-    lastActionError
+    startGame
   } = useWerewolfStore();
 
   const { roomCode, players, setCurrentGameId, leaveRoom } = useCoreStore();
 
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
 
   // Active Tab: 'roles' (deck builder) vs 'timers' (custom rules)
   const [activeTab, setActiveTab] = useState<'roles' | 'timers'>('roles');
@@ -181,13 +179,12 @@ export const HostDashboard: React.FC = () => {
   const canStart = playerCount >= 3 && isCountMatched && !starting;
 
   const handleStartGame = async () => {
-    setLocalError(null);
     if (playerCount < 3) {
-      setLocalError('At least 3 players are required to start the game.');
+      toast.error('At least 3 players are required to start the game.');
       return;
     }
     if (!isCountMatched) {
-      setLocalError(`Role count (${totalAssignedRoles}) does not match players joined (${playerCount}).`);
+      toast.error(`Role count (${totalAssignedRoles}) does not match players joined (${playerCount}).`);
       return;
     }
 
@@ -195,7 +192,7 @@ export const HostDashboard: React.FC = () => {
     const res = await startGame();
     setStarting(false);
     if (!res.success) {
-      setLocalError(res.error || 'Failed to start game. Please try again.');
+      toast.error(res.error || 'Failed to start game. Please try again.');
     }
   };
 
@@ -272,14 +269,6 @@ export const HostDashboard: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Error Alert */}
-      {(localError || lastActionError) && (
-        <div className="w-full p-4 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 text-xs text-[#EF4444] flex items-center gap-3">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span className="font-semibold">{localError || lastActionError}</span>
-        </div>
-      )}
 
       {/* Main Grid: Deck Builder & Player Roster */}
       <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">

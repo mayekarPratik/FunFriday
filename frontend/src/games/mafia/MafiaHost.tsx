@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useMafiaStore } from './mafiaStore';
 import { useCoreStore } from '../../store/coreStore';
 import { InteractiveBackground } from '../../components/InteractiveBackground';
@@ -34,7 +35,6 @@ export const MafiaHost: React.FC = () => {
     winner,
     votes,
     allActionsLocked,
-    lastActionError,
     startMafiaGame,
     forceEndPhase,
     hostRestartGame
@@ -292,7 +292,12 @@ export const MafiaHost: React.FC = () => {
           {/* Pre-Game Start Button */}
           {phase === 'LOBBY' && (
             <button
-              onClick={() => startMafiaGame(settings)}
+              onClick={async () => {
+                const res = await startMafiaGame(settings);
+                if (!res.success) {
+                  toast.error(res.error || 'Failed to start Mafia game. Please try again.');
+                }
+              }}
               disabled={activePlayers.length < 3}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-white shadow-lg shadow-amber-600/30 transition cursor-pointer active:scale-95"
             >
@@ -302,14 +307,6 @@ export const MafiaHost: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Error Alert Box */}
-      {lastActionError && (
-        <div className="w-full p-4 rounded-xl bg-red-950/40 border border-red-800/60 backdrop-blur-md flex items-center gap-3 text-red-400 text-xs font-mono">
-          <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-          <span>{lastActionError}</span>
-        </div>
-      )}
 
       {/* Pre-Game Config vs Roster Tab Switcher (LOBBY ONLY) */}
       {phase === 'LOBBY' && (
