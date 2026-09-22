@@ -6,7 +6,7 @@ export const LobbyClient: React.FC = () => {
   const { roomCode, myPlayerName, players, leaveRoom } = useCoreStore();
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-6 relative z-0 selection:bg-[#3B82F6]/30">
+    <div className="flex-1 w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 relative z-0 selection:bg-[#3B82F6]/30 overflow-hidden box-border">
       <div className="w-full max-w-md mx-auto flex flex-col gap-6 my-auto">
         <div className="wope-card p-6 sm:p-8 flex flex-col items-center text-center gap-6 shadow-2xl relative overflow-hidden">
           {/* Radar wave pulse in background */}

@@ -16,8 +16,9 @@ export const GameOverDisplay: React.FC = () => {
   const isLoversWin = winner === 'lovers';
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center gap-8 py-8">
-      {/* Victory Card */}
+    <div className="flex-1 w-full h-full min-h-0 overflow-y-auto box-border py-4 px-2 sm:px-4">
+      <div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center gap-6 sm:gap-8">
+        {/* Victory Card */}
       <div className="wope-card p-10 sm:p-14 w-full flex flex-col items-center relative overflow-hidden shadow-2xl">
         {/* Glow backdrop based on winner */}
         <div
@@ -150,6 +151,7 @@ export const GameOverDisplay: React.FC = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

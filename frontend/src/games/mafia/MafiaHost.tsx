@@ -222,10 +222,11 @@ export const MafiaHost: React.FC = () => {
 
   // 3. Main Host Dashboard
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6 py-4 px-4 min-h-screen">
-      <InteractiveBackground isLandingPage={false} />
+    <div className="flex-1 w-full h-full min-h-0 overflow-y-auto box-border py-4 px-2 sm:px-4">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6">
+        <InteractiveBackground isLandingPage={false} />
 
-      {/* Top Banner */}
+        {/* Top Banner */}
       <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-[#12141C]/80 border border-[#1F2430] shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <button
@@ -496,6 +497,7 @@ export const MafiaHost: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

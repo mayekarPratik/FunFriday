@@ -114,7 +114,7 @@ export const App: React.FC = () => {
       return (
         <Suspense
           fallback={
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-white">
+            <div className="flex-1 w-full h-full flex flex-col items-center justify-center gap-4 text-white">
               <RefreshCw className="w-8 h-8 text-[#3B82F6] animate-spin" />
               <span className="font-mono text-xs uppercase tracking-widest text-[#94A3B8]">
                 Loading Werewolf Module...
@@ -132,7 +132,7 @@ export const App: React.FC = () => {
       return (
         <Suspense
           fallback={
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-white">
+            <div className="flex-1 w-full h-full flex flex-col items-center justify-center gap-4 text-white">
               <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
               <span className="font-mono text-xs uppercase tracking-widest text-[#94A3B8]">
                 Loading Mafia Module...
@@ -150,7 +150,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-black overflow-hidden text-[#F8FAFC] flex flex-col justify-between selection:bg-[#3B82F6]/30 relative z-0">
+    <div className="h-[100dvh] w-full bg-black overflow-hidden text-[#F8FAFC] flex flex-col justify-between selection:bg-[#3B82F6]/30 relative z-0 box-border">
       {/* Global Interactive Canvas Starfield */}
       <InteractiveBackground isLandingPage={!hasRoomCode} />
 
@@ -159,7 +159,7 @@ export const App: React.FC = () => {
 
       {/* Header bar (Visible in Lobby / Games when roomCode exists and not in fullscreen pitch-black screens) */}
       {hasRoomCode && (
-        <header className="h-16 border-b border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
+        <header className="h-16 shrink-0 border-b border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
               <Shield className="w-4 h-4" />
@@ -200,11 +200,11 @@ export const App: React.FC = () => {
       )}
 
       {/* Main Container */}
-      <main className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 my-auto w-full">
-        <div className="w-full max-w-5xl flex flex-col items-center">
+      <main className="flex-1 min-h-0 w-full flex flex-col justify-center items-center p-3 sm:p-6 overflow-hidden">
+        <div className="w-full max-w-5xl h-full min-h-0 flex flex-col items-center justify-center">
           {/* Error Banner */}
           {(connectionError || lastActionError) && (
-            <div className="w-full max-w-md mb-6 p-4 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 backdrop-blur-md text-xs flex items-start gap-3 text-[#EF4444]">
+            <div className="w-full max-w-md shrink-0 mb-4 p-4 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 backdrop-blur-md text-xs flex items-start gap-3 text-[#EF4444]">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold">{connectionError || lastActionError}</p>
@@ -223,7 +223,7 @@ export const App: React.FC = () => {
 
           {/* Dynamic Router Outlet wrapped in CRT TV animated container */}
           <div
-            className={`w-full h-full origin-center ${tvState === 'turning_off'
+            className={`w-full h-full min-h-0 flex flex-col items-center justify-center origin-center ${tvState === 'turning_off'
                 ? 'animate-crt-off'
                 : tvState === 'turning_on'
                   ? 'animate-crt-on'
@@ -237,7 +237,7 @@ export const App: React.FC = () => {
 
       {/* Footer (only if not landing page since landing page has its own footer) */}
       {hasRoomCode && (
-        <footer className="py-4 border-t border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md text-center text-xs text-[#94A3B8]">
+        <footer className="shrink-0 py-3 border-t border-[#1F2430] bg-[#090A0F]/80 backdrop-blur-md text-center text-xs text-[#94A3B8]">
           <span>The Lobby • Multiplayer Game Hub</span>
         </footer>
       )}

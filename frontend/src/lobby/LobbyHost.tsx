@@ -108,8 +108,9 @@ export const LobbyHost: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8 py-6 px-4">
-      {/* Top Host Header Banner */}
+    <div className="flex-1 w-full h-full min-h-0 overflow-y-auto box-border py-4 px-2 sm:px-4">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6 sm:gap-8">
+        {/* Top Host Header Banner */}
       <div className="w-full flex flex-col md:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-[#12141C] border border-[#1F2430] shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-[#191C28] border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shadow-lg shrink-0">
@@ -313,6 +314,7 @@ export const LobbyHost: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

@@ -152,7 +152,7 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div
-      className="relative z-10 w-full min-h-screen grid grid-cols-1 lg:grid-cols-2 selection:bg-[#3B82F6]/30 overflow-x-hidden"
+      className="relative z-10 w-full h-full max-h-full grid grid-cols-1 lg:grid-cols-2 selection:bg-[#3B82F6]/30 overflow-hidden box-border"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
@@ -160,9 +160,9 @@ export const LandingPage: React.FC = () => {
       <div className="hidden lg:block w-full h-full pointer-events-none" />
 
       {/* Right Column: Master Wrapper Container */}
-      <div className="flex flex-col justify-center items-start w-full max-w-[440px] mx-auto h-full min-h-screen px-6 lg:px-0 py-12">
+      <div className="flex-1 flex flex-col justify-center items-start w-full max-w-[440px] mx-auto h-full max-h-full px-4 sm:px-6 lg:px-0 py-2 sm:py-6 overflow-y-auto lg:overflow-visible box-border">
         {/* Badges Row: Next-Gen Pill & Server Online Badge */}
-        <div className="flex flex-row items-center justify-between w-full mb-6 gap-2">
+        <div className="flex flex-row items-center justify-between w-full mb-4 sm:mb-6 gap-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-semibold tracking-wide">
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
             <span>Next-Gen Social Deduction</span>

@@ -135,7 +135,7 @@ export const LandingPage: React.FC = () => {
     <div
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="min-h-screen w-full flex items-center justify-center lg:justify-end lg:pr-32 px-4 py-8 select-none relative z-0"
+      className="flex-1 w-full h-full flex items-center justify-center lg:justify-end lg:pr-32 px-4 py-8 select-none relative z-0 overflow-hidden box-border"
     >
       {/* Master Frosted Glass Card - Matching Host Dashboard */}
       <div

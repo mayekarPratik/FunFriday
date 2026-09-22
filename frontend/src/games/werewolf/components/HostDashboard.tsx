@@ -218,8 +218,9 @@ export const HostDashboard: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col items-center gap-8 py-4 selection:bg-[#3B82F6]/30">
-      {/* Top Header Card */}
+    <div className="flex-1 w-full h-full min-h-0 overflow-y-auto box-border py-4 px-2 sm:px-4 selection:bg-[#3B82F6]/30">
+      <div className="w-full max-w-5xl mx-auto flex flex-col items-center gap-6 sm:gap-8">
+        {/* Top Header Card */}
       <div className="wope-card p-6 sm:p-8 w-full flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-2xl">
         <div className="flex items-center gap-4">
           <button
@@ -493,6 +494,7 @@ export const HostDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 };

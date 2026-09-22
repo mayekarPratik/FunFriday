@@ -48,7 +48,7 @@ export const PlayerDayVoting: React.FC = () => {
 
   if (!gameState || !me) {
     return (
-      <div className="min-h-screen bg-black text-[#94A3B8] flex items-center justify-center p-6 text-center font-mono text-sm">
+      <div className="flex-1 w-full h-full bg-black text-[#94A3B8] flex items-center justify-center p-6 text-center font-mono text-sm">
         Syncing player identity...
       </div>
     );
@@ -71,9 +71,9 @@ export const PlayerDayVoting: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#090A0F] text-[#F8FAFC] flex flex-col justify-between p-4 sm:p-6 selection:bg-[#3B82F6]/30">
+    <div className="flex-1 w-full h-full bg-[#090A0F] text-[#F8FAFC] flex flex-col justify-between p-3 sm:p-6 selection:bg-[#3B82F6]/30 overflow-hidden box-border">
       {/* Header Bar */}
-      <header className="flex items-center justify-between pb-4 border-b border-[#1F2430]">
+      <header className="shrink-0 flex items-center justify-between pb-3 border-b border-[#1F2430]">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono uppercase">
           <Sun className="w-3.5 h-3.5" />
           <span>Day Trial • Voting</span>
@@ -85,10 +85,10 @@ export const PlayerDayVoting: React.FC = () => {
       </header>
 
       {/* Main Voting Container */}
-      <main className="flex-1 flex flex-col items-center justify-center my-auto py-6">
-        <div className="w-full max-w-md flex flex-col items-center gap-6">
-          <div className="text-center space-y-1.5">
-            <h2 className="text-2xl font-bold text-white">Cast Your Vote</h2>
+      <main className="flex-1 min-h-0 flex flex-col items-center justify-center my-auto py-2 sm:py-4 overflow-hidden">
+        <div className="w-full max-w-md flex flex-col items-center gap-4 max-h-full">
+          <div className="text-center space-y-1 shrink-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Cast Your Vote</h2>
             <p className="text-xs text-[#94A3B8]">
               Select a player to accuse and put on trial for elimination.
             </p>
@@ -96,7 +96,7 @@ export const PlayerDayVoting: React.FC = () => {
 
           {/* Voted Confirmation Pill */}
           {hasVoted && (
-            <div className="w-full p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/60 text-emerald-400 text-xs flex items-center justify-center gap-2">
+            <div className="w-full shrink-0 p-3 rounded-xl bg-emerald-950/30 border border-emerald-800/60 text-emerald-400 text-xs flex items-center justify-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
               <span>
                 Your vote is locked on{' '}
@@ -107,8 +107,8 @@ export const PlayerDayVoting: React.FC = () => {
             </div>
           )}
 
-          {/* Player Target Selection Grid */}
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Player Target Selection Grid (scrolls internally only if options overflow) */}
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[48vh] overflow-y-auto pr-1">
             {eligibleTargets.map((player) => {
               const isSelected = (selectedTarget || myCurrentVote) === player.socket_id;
               return (
@@ -116,7 +116,7 @@ export const PlayerDayVoting: React.FC = () => {
                   key={player.socket_id}
                   type="button"
                   onClick={() => handleVote(player.socket_id)}
-                  className={`p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-98 ${
+                  className={`p-3 sm:p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-98 ${
                     isSelected
                       ? 'bg-amber-500/20 border-amber-500 text-white shadow-lg shadow-amber-500/20'
                       : 'bg-[#12141C] border-[#1F2430] hover:border-amber-500/50 text-[#F8FAFC]'
@@ -144,7 +144,7 @@ export const PlayerDayVoting: React.FC = () => {
       </main>
 
       {/* Footer Instructions */}
-      <footer className="text-center text-xs text-[#64748B] py-2">
+      <footer className="shrink-0 text-center text-[11px] sm:text-xs text-[#64748B] py-2">
         Votes are tallied automatically when the discussion timer concludes.
       </footer>
     </div>

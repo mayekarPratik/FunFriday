@@ -92,8 +92,8 @@ export const MafiaClient: React.FC = () => {
     const Icon = roleMeta.icon;
 
     return (
-      <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center min-h-[80vh] p-6 text-center animate-fadeIn">
-        <div className="w-full p-8 rounded-3xl bg-[#12141C] border border-[#1F2430] shadow-2xl backdrop-blur-xl flex flex-col items-center gap-6 relative overflow-hidden">
+      <div className="flex-1 w-full h-full max-w-md mx-auto flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-fadeIn overflow-hidden box-border">
+        <div className="w-full p-6 sm:p-8 rounded-3xl bg-[#12141C] border border-[#1F2430] shadow-2xl backdrop-blur-xl flex flex-col items-center gap-5 relative overflow-hidden">
           {/* Ambient Glow */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl" />
 
@@ -102,15 +102,15 @@ export const MafiaClient: React.FC = () => {
             <span>Secret Identity Assigned</span>
           </div>
 
-          <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${roleMeta.color} flex items-center justify-center text-white shadow-2xl`}>
-            <Icon className="w-12 h-12" />
+          <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br ${roleMeta.color} flex items-center justify-center text-white shadow-2xl`}>
+            <Icon className="w-10 h-10 sm:w-12 sm:h-12" />
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-3xl font-black uppercase tracking-wider text-white">
+          <div className="space-y-1.5">
+            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
               {roleMeta.title}
             </h1>
-            <p className="text-sm text-[#94A3B8] font-serif leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#94A3B8] font-serif leading-relaxed">
               {roleMeta.description}
             </p>
           </div>
@@ -129,16 +129,16 @@ export const MafiaClient: React.FC = () => {
     const eligibleTargets = players.filter((p) => p.is_alive && (me.role === 'mafia' ? p.role !== 'mafia' : true));
 
     return (
-      <div className="w-full max-w-md mx-auto flex flex-col items-center gap-5 p-4 py-8 select-none animate-fadeIn">
+      <div className="flex-1 w-full h-full max-w-md mx-auto flex flex-col items-center justify-between p-3 sm:p-6 select-none animate-fadeIn overflow-hidden box-border">
         {/* Night Header */}
-        <div className="w-full flex items-center justify-between p-4 rounded-2xl bg-[#12141C] border border-[#1F2430] backdrop-blur-md">
+        <div className="w-full shrink-0 flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-[#12141C] border border-[#1F2430] backdrop-blur-md mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-950/60 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
-              <Moon className="w-5 h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-950/60 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
+              <Moon className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <span className="text-[10px] font-mono uppercase text-indigo-400 font-bold tracking-wider">Night Falls</span>
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">{me.role} Turn</h2>
+              <h2 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">{me.role} Turn</h2>
             </div>
           </div>
 
@@ -171,7 +171,7 @@ export const MafiaClient: React.FC = () => {
               <p className="text-xs text-[#94A3B8]">Select a victim for the Mafia strike tonight.</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2 max-h-[38vh] overflow-y-auto pr-1">
               {eligibleTargets.map((player) => {
                 const isSelected = selectedTarget === player.socket_id || selectedActionTarget === player.socket_id;
                 return (
@@ -181,14 +181,14 @@ export const MafiaClient: React.FC = () => {
                       setSelectedTarget(player.socket_id);
                       submitNightAction(player.socket_id);
                     }}
-                    className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-[0.98] ${
+                    className={`w-full p-3.5 sm:p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-[0.98] ${
                       isSelected
                         ? 'bg-red-950/60 border-red-600 text-white shadow-lg shadow-red-950/50'
                         : 'bg-[#12141C] border-[#1F2430] hover:border-red-500/50 text-[#94A3B8] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#191C28] flex items-center justify-center text-sm font-bold text-white">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#191C28] flex items-center justify-center text-sm font-bold text-white">
                         {player.name.slice(0, 2).toUpperCase()}
                       </div>
                       <span className="font-bold text-sm">{player.name}</span>
@@ -203,13 +203,13 @@ export const MafiaClient: React.FC = () => {
 
         {/* Doctor Save Action UI */}
         {me.role === 'doctor' && (
-          <div className="w-full space-y-4">
-            <div className="text-center space-y-1">
-              <h3 className="text-base font-bold text-white">Choose a Patient to Protect</h3>
+          <div className="w-full space-y-3">
+            <div className="text-center space-y-0.5">
+              <h3 className="text-sm sm:text-base font-bold text-white">Choose a Patient to Protect</h3>
               <p className="text-xs text-[#94A3B8]">They will be shielded from Mafia attacks tonight.</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2 max-h-[38vh] overflow-y-auto pr-1">
               {eligibleTargets.map((player) => {
                 const isSelected = selectedTarget === player.socket_id || selectedActionTarget === player.socket_id;
                 return (
@@ -219,14 +219,14 @@ export const MafiaClient: React.FC = () => {
                       setSelectedTarget(player.socket_id);
                       submitNightAction(player.socket_id);
                     }}
-                    className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-[0.98] ${
+                    className={`w-full p-3.5 sm:p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-[0.98] ${
                       isSelected
                         ? 'bg-emerald-950/60 border-emerald-600 text-white shadow-lg shadow-emerald-950/50'
                         : 'bg-[#12141C] border-[#1F2430] hover:border-emerald-500/50 text-[#94A3B8] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#191C28] flex items-center justify-center text-sm font-bold text-white">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#191C28] flex items-center justify-center text-sm font-bold text-white">
                         {player.name.slice(0, 2).toUpperCase()}
                       </div>
                       <span className="font-bold text-sm">{player.name}</span>
@@ -241,12 +241,12 @@ export const MafiaClient: React.FC = () => {
 
         {/* Detective Investigation Action UI */}
         {me.role === 'detective' && (
-          <div className="w-full space-y-4">
-            <div className="text-center space-y-1">
+          <div className="w-full space-y-3">
+            <div className="text-center space-y-0.5">
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono font-bold uppercase tracking-wider mb-1">
                 <Search className="w-3.5 h-3.5" /> Private Investigation
               </div>
-              <h3 className="text-base font-bold text-white">Investigate a Suspect</h3>
+              <h3 className="text-sm sm:text-base font-bold text-white">Investigate a Suspect</h3>
               <p className="text-xs text-[#94A3B8]">
                 {myInvestigation
                   ? 'Your investigation report is ready. Results are private to your device.'
@@ -257,41 +257,32 @@ export const MafiaClient: React.FC = () => {
             {/* Private Detective Investigation Reveal Card */}
             {myInvestigation && (
               <div
-                className={`w-full p-6 rounded-3xl border text-center space-y-3 shadow-2xl backdrop-blur-xl animate-fadeIn relative overflow-hidden ${
+                className={`w-full p-5 sm:p-6 rounded-3xl border text-center space-y-2.5 shadow-2xl backdrop-blur-xl animate-fadeIn relative overflow-hidden ${
                   myInvestigation.is_mafia
-                    ? 'bg-red-950/70 border-red-600 shadow-red-950/60'
-                    : 'bg-emerald-950/70 border-emerald-600 shadow-emerald-950/60'
+                    ? 'bg-red-950/60 border-red-700 shadow-red-950/80 text-red-300'
+                    : 'bg-emerald-950/60 border-emerald-700 shadow-emerald-950/80 text-emerald-300'
                 }`}
               >
-                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-50" />
+                <div className="flex items-center justify-center gap-2">
+                  <span className={`w-3 h-3 rounded-full ${myInvestigation.is_mafia ? 'bg-red-500 animate-ping' : 'bg-emerald-500'}`} />
+                  <span className="text-xs font-mono uppercase tracking-widest font-bold">Investigation Complete</span>
+                </div>
 
-                <span className="inline-block text-[10px] font-mono uppercase font-bold tracking-widest text-blue-300 bg-blue-950/60 border border-blue-800 px-3 py-1 rounded-full">
-                  Confidential Dossier
-                </span>
-
-                <div className="space-y-1">
-                  <h4 className="text-2xl font-serif text-white font-bold tracking-wide">
-                    {myInvestigation.targetName || myInvestigation.target_name}
-                  </h4>
-                  <div
-                    className={`text-lg font-mono font-extrabold uppercase tracking-widest ${
-                      myInvestigation.is_mafia ? 'text-red-400' : 'text-emerald-400'
-                    }`}
-                  >
-                    {myInvestigation.is_mafia
-                      ? '⚠️ Appears to be MAFIA'
-                      : '✓ Appears to be a CITIZEN'}
+                <div className="py-1">
+                  <div className="text-xl sm:text-2xl font-black text-white">{myInvestigation.target_name || myInvestigation.targetName}</div>
+                  <div className={`text-sm sm:text-base font-bold mt-0.5 ${myInvestigation.is_mafia ? 'text-red-400' : 'text-emerald-400'}`}>
+                    Alignment: {myInvestigation.alignment || (myInvestigation.is_mafia ? 'MAFIA MEMBER' : 'INNOCENT CITIZEN')}
                   </div>
                 </div>
 
-                <p className="text-xs font-serif text-gray-300 italic pt-2 border-t border-white/10">
-                  "Investigation complete. Keep this intel secret until morning discussion."
+                <p className="text-[11px] text-[#94A3B8] font-mono">
+                  Keep this intelligence secret until daytime debate.
                 </p>
               </div>
             )}
 
             {/* Mutually Exclusive Player Selectable List */}
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-2 max-h-[34vh] overflow-y-auto pr-1">
               {eligibleTargets
                 .filter((p) => p.socket_id !== me.socket_id)
                 .map((player) => {
@@ -308,7 +299,7 @@ export const MafiaClient: React.FC = () => {
                           setSelectedTarget(player.socket_id);
                         }
                       }}
-                      className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all duration-200 ${
+                      className={`w-full p-3.5 sm:p-4 rounded-2xl border text-left flex items-center justify-between transition-all duration-200 ${
                         isLocked
                           ? isSelected
                             ? 'bg-blue-950/40 border-blue-600/60 text-white opacity-90 cursor-default'
@@ -319,7 +310,7 @@ export const MafiaClient: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#191C28] border border-[#1F2430] flex items-center justify-center text-sm font-bold text-white">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#191C28] border border-[#1F2430] flex items-center justify-center text-sm font-bold text-white">
                           {player.name.slice(0, 2).toUpperCase()}
                         </div>
                         <span className="font-bold text-sm">{player.name}</span>
@@ -364,16 +355,16 @@ export const MafiaClient: React.FC = () => {
     const livingTargets = players.filter((p) => p.is_alive && p.socket_id !== me.socket_id);
 
     return (
-      <div className="w-full max-w-md mx-auto flex flex-col items-center gap-5 p-4 py-8 select-none animate-fadeIn">
+      <div className="flex-1 w-full h-full max-w-md mx-auto flex flex-col items-center justify-between p-3 sm:p-6 select-none animate-fadeIn overflow-hidden box-border">
         {/* Day Header */}
-        <div className="w-full flex items-center justify-between p-4 rounded-2xl bg-[#12141C] border border-[#1F2430] backdrop-blur-md">
+        <div className="w-full shrink-0 flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-[#12141C] border border-[#1F2430] backdrop-blur-md mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-800/60 flex items-center justify-center text-amber-400">
-              <Sun className="w-5 h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-950/60 border border-amber-800/60 flex items-center justify-center text-amber-400">
+              <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <span className="text-[10px] font-mono uppercase text-amber-400 font-bold tracking-wider">Daylight Discussion</span>
-              <h2 className="text-sm font-bold text-white">Vote Out a Suspect</h2>
+              <h2 className="text-xs sm:text-sm font-bold text-white">Vote Out a Suspect</h2>
             </div>
           </div>
 
@@ -385,8 +376,8 @@ export const MafiaClient: React.FC = () => {
           )}
         </div>
 
-        {/* Voting List */}
-        <div className="w-full space-y-2.5">
+        {/* Voting List (Scrolls internally on small screens) */}
+        <div className="w-full flex-1 min-h-0 space-y-2.5 overflow-y-auto pr-1">
           {livingTargets.map((player) => {
             const isVoted = selectedTarget === player.socket_id;
             return (
@@ -396,14 +387,14 @@ export const MafiaClient: React.FC = () => {
                   setSelectedTarget(player.socket_id);
                   submitVote(player.socket_id);
                 }}
-                className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-[0.98] ${
+                className={`w-full p-3.5 sm:p-4 rounded-2xl border text-left flex items-center justify-between transition cursor-pointer active:scale-[0.98] ${
                   isVoted
                     ? 'bg-amber-950/60 border-amber-600 text-white shadow-lg shadow-amber-950/50'
                     : 'bg-[#12141C] border-[#1F2430] hover:border-amber-500/50 text-[#94A3B8] hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#191C28] flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#191C28] flex items-center justify-center text-sm font-bold text-white">
                     {player.name.slice(0, 2).toUpperCase()}
                   </div>
                   <span className="font-bold text-sm">{player.name}</span>
@@ -422,7 +413,7 @@ export const MafiaClient: React.FC = () => {
               setSelectedTarget('skip');
               submitVote('skip');
             }}
-            className={`w-full p-3.5 rounded-2xl border text-center font-mono text-xs font-bold uppercase transition cursor-pointer ${
+            className={`w-full p-3 rounded-2xl border text-center font-mono text-xs font-bold uppercase transition cursor-pointer ${
               selectedTarget === 'skip'
                 ? 'bg-neutral-800 border-white text-white'
                 : 'bg-[#090A0F] border-[#1F2430] text-[#94A3B8] hover:text-white'

@@ -41,8 +41,9 @@ export const HostDayDisplay: React.FC = () => {
   const totalVotesCast = Object.keys(gameState.votes || {}).length;
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col items-center text-center gap-8 py-4">
-      {/* Top Casualty & Day Header */}
+    <div className="flex-1 w-full h-full min-h-0 overflow-y-auto box-border py-4 px-2 sm:px-4">
+      <div className="w-full max-w-5xl mx-auto flex flex-col items-center text-center gap-6 sm:gap-8">
+        {/* Top Casualty & Day Header */}
       <div className="wope-card p-8 sm:p-10 w-full flex flex-col items-center relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-3xl rounded-full pointer-events-none" />
 
@@ -183,6 +184,7 @@ export const HostDayDisplay: React.FC = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

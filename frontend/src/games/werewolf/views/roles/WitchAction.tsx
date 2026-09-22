@@ -61,7 +61,7 @@ export const WitchAction: React.FC = () => {
 
   if (!gameState || !me) {
     return (
-      <div className="min-h-screen bg-black text-[#94A3B8] flex items-center justify-center p-6 text-center font-mono text-sm">
+      <div className="flex-1 w-full h-full bg-black text-[#94A3B8] flex items-center justify-center p-6 text-center font-mono text-sm">
         Syncing player identity...
       </div>
     );
@@ -151,11 +151,11 @@ export const WitchAction: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen w-full bg-black text-white flex flex-col justify-between p-4 sm:p-6 select-none touch-manipulation"
+      className="flex-1 w-full h-full bg-black text-white flex flex-col justify-between p-3 sm:p-6 select-none touch-manipulation overflow-hidden box-border"
       style={{ backgroundColor: '#000000' }}
     >
       {/* Discreet Header */}
-      <header className="flex items-center justify-between py-2 border-b border-white/5 opacity-40">
+      <header className="shrink-0 flex items-center justify-between py-2 border-b border-white/5 opacity-40">
         <div className="flex items-center gap-2 font-mono text-xs text-neutral-400">
           <Moon className="w-3.5 h-3.5" />
           <span>NIGHT PHASE • WITCH's COVEN</span>
@@ -166,7 +166,7 @@ export const WitchAction: React.FC = () => {
       </header>
 
       {/* Main Secret Content Area */}
-      <main className="flex-1 flex flex-col items-center justify-center my-auto py-4">
+      <main className="flex-1 min-h-0 flex flex-col items-center justify-center my-auto py-2 sm:py-4 overflow-hidden">
         {isRevealed ? (
           <div className="w-full max-w-md flex flex-col items-center text-center animate-fadeIn">
             {/* Fast-Shrinking Red Progress Bar */}
