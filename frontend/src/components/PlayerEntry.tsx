@@ -46,16 +46,31 @@ export const PlayerEntry: React.FC<PlayerEntryProps> = ({ onSwitchToHost }) => {
             <label className="text-xs font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
               <KeyRound className="w-3.5 h-3.5 text-[#3B82F6]" /> Room Code
             </label>
-            <input
-              type="text"
-              maxLength={4}
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              placeholder="4-LETTER CODE"
-              className="w-full h-12 px-4 rounded-lg bg-[#090A0F] border border-[#1F2430] text-[#F8FAFC] font-mono tracking-widest text-center text-lg font-bold uppercase placeholder:text-[#94A3B8]/40 focus:outline-none focus:border-[#3B82F6] transition"
-              required
-              autoFocus
-            />
+            <div className="relative">
+              <input
+                type="text"
+                maxLength={7}
+                value={roomCode ? roomCode.split('').join('-') : ''}
+                onChange={(e) => {
+                  const rawValue = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+                  const cleanValue = rawValue.slice(0, 4);
+                  setRoomCode(cleanValue);
+                }}
+                className="w-full h-12 px-4 rounded-lg bg-[#090A0F] border border-[#1F2430] text-[#F8FAFC] font-mono tracking-widest text-center text-lg font-bold uppercase focus:outline-none focus:border-[#3B82F6] transition"
+                required
+                autoFocus
+              />
+              {!roomCode && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[#94A3B8]/40 select-none">
+                  <span className="text-xs font-normal font-sans tracking-normal lowercase opacity-80 mr-2">
+                    e.g.
+                  </span>
+                  <span className="font-mono font-bold text-lg tracking-widest uppercase">
+                    W-O-L-F
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Player Name */}

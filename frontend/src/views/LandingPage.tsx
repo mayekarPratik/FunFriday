@@ -121,9 +121,9 @@ export const LandingPage: React.FC = () => {
   };
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
-    const formattedValue = rawValue.split('').join('-');
-    setRoomCode(formattedValue);
+    const rawValue = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    const cleanValue = rawValue.slice(0, 4);
+    setRoomCode(cleanValue);
   };
 
   return (
@@ -237,16 +237,27 @@ export const LandingPage: React.FC = () => {
                 <label className="text-xs font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-[#3B82F6]" /> Room Code
                 </label>
-                <input
-                  type="text"
-                  maxLength={7}
-                  value={roomCode}
-                  onChange={handleRoomCodeChange}
-                  placeholder="X-X-X-X"
-                  className="w-full h-12 px-4 text-center tracking-[0.25em] font-mono text-xl uppercase font-bold text-white bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg placeholder:text-gray-600 focus:outline-none transition"
-                  required
-                  autoFocus
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    maxLength={7}
+                    value={roomCode ? roomCode.split('').join('-') : ''}
+                    onChange={handleRoomCodeChange}
+                    className="w-full h-12 px-4 text-center tracking-[0.25em] font-mono text-xl uppercase font-bold text-white bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg focus:outline-none transition"
+                    required
+                    autoFocus
+                  />
+                  {!roomCode && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-gray-600 select-none">
+                      <span className="text-xs font-normal font-sans tracking-normal lowercase opacity-80 mr-2">
+                        e.g.
+                      </span>
+                      <span className="font-mono font-bold text-xl tracking-[0.25em] uppercase">
+                        W-O-L-F
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Player Name */}

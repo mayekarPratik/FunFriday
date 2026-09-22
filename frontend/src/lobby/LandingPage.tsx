@@ -141,8 +141,9 @@ export const LandingPage: React.FC = () => {
   };
 
   const handleRoomCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
-    setRoomCodeState(val);
+    const rawValue = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    const cleanValue = rawValue.slice(0, 4);
+    setRoomCodeState(cleanValue);
   };
 
   return (
@@ -280,14 +281,23 @@ export const LandingPage: React.FC = () => {
                   <div className="relative">
                     <input
                       type="text"
-                      value={roomCode}
+                      value={roomCode ? roomCode.split('').join('-') : ''}
                       onChange={handleRoomCodeChange}
-                      placeholder="WOLF"
-                      maxLength={4}
+                      maxLength={7}
                       autoComplete="off"
                       autoCapitalize="characters"
-                      className="w-full bg-[#090A0F] border border-[#1F2430] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] rounded-xl py-3.5 px-4 text-center font-mono font-bold text-2xl tracking-[0.3em] uppercase text-white placeholder:text-[#334155] outline-none transition"
+                      className="w-full bg-[#090A0F] border border-[#1F2430] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] rounded-xl py-3.5 px-4 text-center font-mono font-bold text-2xl tracking-[0.3em] uppercase text-white outline-none transition"
                     />
+                    {!roomCode && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-[#334155] select-none">
+                        <span className="text-xs font-normal font-sans tracking-normal lowercase opacity-80 mr-2">
+                          e.g.
+                        </span>
+                        <span className="font-mono font-bold text-2xl tracking-[0.3em] uppercase">
+                          W-O-L-F
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
