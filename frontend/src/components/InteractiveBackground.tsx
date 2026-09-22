@@ -20,43 +20,45 @@ interface Particle {
   ease: number;
 }
 
-// Strict, detailed SVG Path2D outline for Howling Werewolf
+// Clean, geometric front-facing wolf silhouette matching the geometric head logo (Path2D SVG)
 const WOLF_PATH_SVG = new Path2D(
-  // Majestic howling werewolf silhouette profile (snout, ears, nape fur, chest, haunches, tail, ground)
-  'M 18.5 2.5 ' + // Snout tip pointing up-right
-  'L 17.2 4.2 ' +
-  'C 16.5 3.5 15.2 3 13.8 2.8 ' +
-  'L 14.5 0.5 ' + // Front ear tip
-  'L 12.2 2.6 ' +
-  'L 10.8 1.2 ' + // Back ear tip
-  'L 9.5 3.2 ' +
-  'C 8.2 4.5 7.2 6.2 6.5 8 ' + // Nape
-  'L 4.5 7.5 ' + // Mane tuft 1
-  'L 5.8 10 ' +
-  'L 3.5 10.5 ' + // Mane tuft 2
-  'L 5.2 13 ' +
-  'L 3 14 ' + // Mane tuft 3
-  'L 5.5 16.5 ' +
-  'C 4.8 19 4.5 21.5 5 24 ' + // Back curve to haunches
-  'C 4 25.5 3 27 2 28.5 ' + // Tail
-  'C 4 29 6.5 28.5 8.5 27.2 ' +
-  'L 9.5 28.5 ' + // Back paw/base
-  'L 13 28.5 ' +
-  'L 12.5 25.5 ' +
-  'C 13.8 25 15 24 16 22.8 ' +
-  'L 18.5 28.5 ' + // Front paw
-  'L 21.5 28.5 ' +
-  'L 19.5 24 ' + // Foreleg
-  'C 20.8 21.5 21.5 18.5 21.2 15.5 ' + // Muscular chest
-  'C 20.8 13 19.8 10.8 18.2 9 ' + // Throat
-  'L 20.5 7.2 ' + // Open lower jaw
-  'L 17.5 7 ' + // Throat cleft
-  'L 19.8 4.8 ' + // Upper jaw
-  'Z ' +
-  // Majestic Crescent Moon outline encircling the howl
-  'M 16 -1 A 14 14 0 1 0 30 13 A 11 11 0 1 1 16 -1 Z'
+  // Crown & Forehead
+  'M 50 16 L 34 19 L 28 37 L 15 38 L 13 62 L 28 88 L 50 95 L 72 88 L 87 62 L 85 38 L 72 37 L 66 19 Z ' +
+
+  // Left Ear
+  'M 15 38 L 13 16 L 21 8 L 34 19 L 21 8 L 27 20 L 30 31 L 22 34 ' +
+
+  // Right Ear
+  'M 85 38 L 87 16 L 79 8 L 66 19 L 79 8 L 73 20 L 70 31 L 78 34 ' +
+
+  // Brow & Forehead Creases
+  'M 35 40 L 47 43 L 49 50 ' +
+  'M 65 40 L 53 43 L 51 50 ' +
+
+  // Eyes (Left & Right)
+  'M 26 49 L 31 45 L 41 46 L 35 52 Z ' +
+  'M 74 49 L 69 45 L 59 46 L 65 52 Z ' +
+
+  // Cheeks & Whiskers
+  'M 26 56 L 28 63 ' +
+  'M 74 56 L 72 63 ' +
+  'M 32 65 L 31 73 ' +
+  'M 68 65 L 69 73 ' +
+
+  // Snout & Bridge
+  'M 49 50 L 45 53 L 44 74 L 45 76 ' +
+  'M 51 50 L 55 53 L 56 74 L 55 76 ' +
+
+  // Nose Hexagon
+  'M 45 76 L 55 76 L 58 80 L 55 85 L 45 85 L 42 80 Z ' +
+
+  // Muzzle & Mouth
+  'M 34 79 L 41 89 L 50 90 L 59 89 L 66 79 ' +
+  'M 45 85 L 41 89 ' +
+  'M 55 85 L 59 89 ' +
+  'M 50 90 L 50 95'
 );
-const WOLF_BOUNDS = { minX: 2, minY: -1, maxX: 30, maxY: 29 };
+const WOLF_BOUNDS = { minX: 13, minY: 8, maxX: 87, maxY: 95 };
 
 // Strict, recognizable SVG Path2D outline for Mafia Fedora, Glasses & Suit
 const MAFIA_PATH_SVG = new Path2D(
@@ -94,7 +96,7 @@ function getShapeCoordinates(
 
   ctx.clearRect(0, 0, width, height);
 
-  // 1. Left-Center Positioning: 28% of screen width, 50% of screen height (vertical center)
+  // Left-Center Positioning: 28% of screen width on desktop, 50% on mobile
   const centerX = width < 1024 ? width * 0.5 : width * 0.28;
   const centerY = height * 0.5;
 
@@ -104,17 +106,14 @@ function getShapeCoordinates(
   const shapeCenterX = bounds.minX + shapeWidth / 2;
   const shapeCenterY = bounds.minY + shapeHeight / 2;
 
-  // Scale shape up to massive game-art scale (occupying ~55% of screen height)
-  const scale = Math.min((width * 0.42) / shapeWidth, (height * 0.58) / shapeHeight, 18);
+  // Scale shape up to occupy ~56% of screen height
+  const scale = Math.min((width * 0.42) / shapeWidth, (height * 0.58) / shapeHeight, iconType === 'wolf' ? 7.5 : 18);
 
   ctx.save();
-  // Translate to target screen position
   ctx.translate(centerX, centerY);
   ctx.scale(scale, scale);
-  // Offset by half its width and height so it scales from its true center
   ctx.translate(-shapeCenterX, -shapeCenterY);
 
-  // 3. Strict Outline Enforcement (Stroke-Only, NO ctx.fill())
   ctx.lineWidth = 1.6 / scale;
   ctx.strokeStyle = '#ffffff';
 
@@ -126,7 +125,6 @@ function getShapeCoordinates(
 
   ctx.restore();
 
-  // Extract outline perimeter points
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
   const perimeterPoints: { x: number; y: number }[] = [];
@@ -159,12 +157,10 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
     isLandingPageRef.current = isLandingPage;
 
     if (prev && !isLandingPage) {
-      // Transitioning: Landing -> Game (scatter/exit)
       if (triggerExitRef.current) {
         triggerExitRef.current();
       }
     } else if (!prev && isLandingPage) {
-      // Transitioning: Game -> Landing (spawn at edges & assemble)
       if (triggerEnterRef.current) {
         triggerEnterRef.current();
       }
@@ -178,14 +174,12 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Device detection: true only if width < 768px AND device supports touch events
     const isMobile = window.innerWidth < 768 && 'ontouchstart' in window;
 
     let animationFrameId: number;
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Mouse coordinates for desktop repulsion
     const mouse = {
       x: -9999,
       y: -9999,
@@ -218,16 +212,17 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       window.addEventListener('mouseleave', handleMouseLeave);
     }
 
-    // Adaptive Particle Count: 40 on mobile, 240 on desktop
-    const particleCount = isMobile ? 40 : 240;
+    // Increased particle count for crisp, well-defined silhouette lines
+    const particleCount = isMobile ? 50 : 320;
     const particles: Particle[] = [];
 
-    const maxLineDistance = 45;
+    // Tighter constellation distance so lines trace the actual shape contour cleanly
+    const maxLineDistance = isMobile ? 32 : 36;
     let shapeOpacity = 0;
+    let currentShapeType: 'none' | 'wolf' | 'mafia' = 'none';
     let isExiting = !isLandingPageRef.current;
     let isCompletelyOffscreen = !isLandingPageRef.current;
 
-    // Helper: Pick a random point along the perimeter/outer edges of the viewport
     const getRandomEdgeCoordinate = () => {
       const edge = Math.floor(Math.random() * 4);
       let edgeX = 0;
@@ -235,19 +230,19 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       const margin = 20;
 
       switch (edge) {
-        case 0: // Top edge
+        case 0:
           edgeX = Math.random() * width;
           edgeY = -margin;
           break;
-        case 1: // Right edge
+        case 1:
           edgeX = width + margin;
           edgeY = Math.random() * height;
           break;
-        case 2: // Bottom edge
+        case 2:
           edgeX = Math.random() * width;
           edgeY = height + margin;
           break;
-        case 3: // Left edge
+        case 3:
         default:
           edgeX = -margin;
           edgeY = Math.random() * height;
@@ -282,12 +277,13 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
         twinkleSpeed: 0.005 + Math.random() * 0.015,
         state: 'drifting',
         friction: 0.92,
-        ease: 0.024
+        ease: 0.026
       });
     }
 
     const applyShapeTargets = (iconType: 'wolf' | 'mafia') => {
       if (!isLandingPageRef.current) return;
+      currentShapeType = iconType;
       const shapeCoords = getShapeCoordinates(iconType, width, height);
       if (shapeCoords.length === 0) return;
 
@@ -300,12 +296,13 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
         p.targetX = target.x;
         p.targetY = target.y;
         p.state = 'forming';
-        p.vx *= 0.5;
-        p.vy *= 0.5;
+        p.vx *= 0.4;
+        p.vy *= 0.4;
       });
     };
 
     const releaseParticles = () => {
+      currentShapeType = 'none';
       shapeOpacity = 0;
       particles.forEach((p) => {
         p.state = 'drifting';
@@ -316,8 +313,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       });
     };
 
-    // 1. Trigger Exit: Strong radial blast outwards to push all particles off-screen
-    // 1. Trigger Exit: Smooth, graceful outward drift to push all particles off-screen
     const triggerExit = () => {
       isExiting = true;
       isCompletelyOffscreen = false;
@@ -328,46 +323,39 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
 
       particles.forEach((p) => {
         p.state = 'drifting';
-        // Calculate radial direction vector from screen center
         let dx = p.x - centerX;
         let dy = p.y - centerY;
         const dist = Math.hypot(dx, dy) || 1;
         dx /= dist;
         dy /= dist;
 
-        // Apply a gentle, elegant exit velocity that builds up smoothly
         const speed = 1.8 + Math.random() * 2.4;
         p.vx = dx * speed;
         p.vy = dy * speed;
       });
     };
 
-    // 2. Trigger Enter: Spawn along viewport edges and glide smoothly to shape / center
     const triggerEnter = () => {
       isExiting = false;
       isCompletelyOffscreen = false;
 
-      // Spawn each particle randomly on outer edges
       particles.forEach((p) => {
         const { edgeX, edgeY } = getRandomEdgeCoordinate();
         p.x = edgeX;
         p.y = edgeY;
         p.state = 'drifting';
 
-        // Target somewhere inside screen
         const targetInsideX = width * 0.15 + Math.random() * (width * 0.7);
         const targetInsideY = height * 0.15 + Math.random() * (height * 0.7);
         p.targetX = targetInsideX;
         p.targetY = targetInsideY;
 
-        // Gentle inward initial velocity
         const angle = Math.atan2(targetInsideY - edgeY, targetInsideX - edgeX);
         const inwardSpeed = 4 + Math.random() * 6;
         p.vx = Math.cos(angle) * inwardSpeed;
         p.vy = Math.sin(angle) * inwardSpeed;
       });
 
-      // Default start forming wolf constellation on entry
       if (!isMobile) {
         applyShapeTargets('wolf');
       }
@@ -376,18 +364,15 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
     triggerExitRef.current = triggerExit;
     triggerEnterRef.current = triggerEnter;
 
-    // State Machine Cycle (38 seconds total loop)
     let lastPhase = -1;
     const cycleDuration = 38000;
     const startTime = performance.now();
-
     let time = 0;
 
     const render = () => {
       time += 0.02;
       const activeLanding = isLandingPageRef.current;
 
-      // Performance optimization: When in gameplay and all particles are offscreen, skip rendering
       if (!activeLanding && isCompletelyOffscreen) {
         animationFrameId = requestAnimationFrame(render);
         return;
@@ -395,7 +380,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
 
       const elapsed = (performance.now() - startTime) % cycleDuration;
 
-      // State machine cycle runs only on desktop and only on the Landing Page
       if (!isMobile && activeLanding && !isExiting) {
         let currentPhase = 0;
         if (elapsed >= 0 && elapsed < 10000) {
@@ -419,7 +403,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
           }
         }
 
-        // Smoothly fade constellation lines in during forming phases
         if (currentPhase === 2 || currentPhase === 4) {
           shapeOpacity = Math.min(1, shapeOpacity + 0.025);
         } else {
@@ -438,23 +421,19 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Subtle twinkling
         p.alpha = p.baseAlpha + Math.sin(time * p.twinkleSpeed * 50 + i) * 0.15;
         p.alpha = Math.max(0.1, Math.min(1, p.alpha));
 
         if (!activeLanding || isExiting) {
-          // Smooth outward acceleration towards outer bounds
           p.vx *= 1.018;
           p.vy *= 1.018;
           p.x += p.vx;
           p.y += p.vy;
 
-          // Check if particle is still on screen (with 60px margin)
           if (p.x >= -60 && p.x <= width + 60 && p.y >= -60 && p.y <= height + 60) {
             visibleCount++;
           }
         } else if (p.state === 'drifting') {
-          // Physics: Mouse repulsion only on desktop while drifting
           if (!isMobile) {
             const dx = mouse.x - p.x;
             const dy = mouse.y - p.y;
@@ -470,7 +449,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
               p.vx -= forceDirectionX * force * repulsionStrength * 0.4;
               p.vy -= forceDirectionY * force * repulsionStrength * 0.4;
             } else {
-              // Smoothly relax back to natural drift speed
               p.vx += (p.baseVx - p.vx) * 0.015;
               p.vy += (p.baseVy - p.vy) * 0.015;
             }
@@ -479,7 +457,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
           p.x += p.vx;
           p.y += p.vy;
 
-          // Wrap around screen boundaries with margin on landing page
           if (p.x < -10) p.x = width + 10;
           else if (p.x > width + 10) p.x = -10;
           if (p.y < -10) p.y = height + 10;
@@ -487,7 +464,6 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
 
           visibleCount++;
         } else {
-          // Forming state: Smooth spring physics / lerp towards target
           const dx = p.targetX - p.x;
           const dy = p.targetY - p.y;
 
@@ -502,19 +478,36 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
           visibleCount++;
         }
 
-        // Draw particle dot if within render bounds
+        // Draw particle dot with dynamic color when forming shapes & white when drifting
         if (p.x >= -50 && p.x <= width + 50 && p.y >= -50 && p.y <= height + 50) {
+          const isForming = activeLanding && p.state === 'forming' && shapeOpacity > 0.05;
+
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+
+          if (isForming && currentShapeType === 'wolf') {
+            // Radiant Cyan-Blue / Violet highlight for Wolf
+            ctx.fillStyle = `rgba(56, 189, 248, ${p.alpha})`;
+          } else if (isForming && currentShapeType === 'mafia') {
+            // Warm Amber-Gold highlight for Mafia
+            ctx.fillStyle = `rgba(251, 191, 36, ${p.alpha})`;
+          } else {
+            // Crisp White stars when drifting or scattered
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+          }
           ctx.fill();
 
-          // Extra soft halo on forming particles & prominent stars
-          const isForming = activeLanding && p.state === 'forming';
+          // Soft luminous aura around forming shape nodes
           if (p.size > 1.8 || isForming) {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * (isForming ? 1.6 : 2), 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(186, 230, 253, ${p.alpha * 0.3})`;
+            ctx.arc(p.x, p.y, p.size * (isForming ? 2.0 : 1.8), 0, Math.PI * 2);
+            if (isForming && currentShapeType === 'wolf') {
+              ctx.fillStyle = `rgba(56, 189, 248, ${p.alpha * 0.35 * shapeOpacity})`;
+            } else if (isForming && currentShapeType === 'mafia') {
+              ctx.fillStyle = `rgba(245, 158, 11, ${p.alpha * 0.35 * shapeOpacity})`;
+            } else {
+              ctx.fillStyle = `rgba(186, 230, 253, ${p.alpha * 0.25})`;
+            }
             ctx.fill();
           }
         }
@@ -524,7 +517,7 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
         isCompletelyOffscreen = true;
       }
 
-      // Constellation Effect: Draw connecting lines only when forming shapes on landing page
+      // Constellation Effect: Vibrant colored laser lines connecting shape nodes, crisp & clear
       if (activeLanding && shapeOpacity > 0.001) {
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
@@ -533,13 +526,24 @@ export const InteractiveBackground: React.FC<InteractiveBackgroundProps> = ({ is
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance < maxLineDistance) {
-              const lineOpacity = (1 - distance / maxLineDistance) * shapeOpacity * 0.55;
+              const lineOpacity = (1 - distance / maxLineDistance) * shapeOpacity * 0.75;
               if (lineOpacity > 0.01) {
                 ctx.beginPath();
                 ctx.moveTo(particles[i].x, particles[i].y);
                 ctx.lineTo(particles[j].x, particles[j].y);
-                ctx.strokeStyle = `rgba(186, 230, 253, ${lineOpacity})`;
-                ctx.lineWidth = 0.6;
+
+                if (currentShapeType === 'wolf') {
+                  // Vibrant Cyan / Sky-Blue constellation lines for clear wolf outline
+                  ctx.strokeStyle = `rgba(56, 189, 248, ${lineOpacity})`;
+                  ctx.lineWidth = 0.85;
+                } else if (currentShapeType === 'mafia') {
+                  // Rich Gold / Amber constellation lines for Mafia
+                  ctx.strokeStyle = `rgba(251, 191, 36, ${lineOpacity})`;
+                  ctx.lineWidth = 0.85;
+                } else {
+                  ctx.strokeStyle = `rgba(186, 230, 253, ${lineOpacity * 0.5})`;
+                  ctx.lineWidth = 0.6;
+                }
                 ctx.stroke();
               }
             }
