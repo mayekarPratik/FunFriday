@@ -280,16 +280,25 @@ export function registerSocketHandlers(io: Server): void {
           throw new Error('Cannot join game that is already in progress');
         }
 
+        const trimmedName = name.trim();
         const existingPlayerIndex = state.players.findIndex(
           (p) => p.socket_id === socket.id
         );
 
+        // Check if name is already taken by another player in the room
+        const isNameTaken = state.players.some(
+          (p) => p.socket_id !== socket.id && p.name.toLowerCase() === trimmedName.toLowerCase()
+        );
+        if (isNameTaken) {
+          throw new Error('Nickname already in use. Please choose another.');
+        }
+
         if (existingPlayerIndex !== -1) {
-          state.players[existingPlayerIndex].name = name.trim();
+          state.players[existingPlayerIndex].name = trimmedName;
         } else {
           const newPlayer: Player = {
             socket_id: socket.id,
-            name: name.trim(),
+            name: trimmedName,
             role: 'villager',
             is_alive: true
           };

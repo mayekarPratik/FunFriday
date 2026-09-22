@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { useCoreStore } from '../store/coreStore';
 import {
   Smartphone,
@@ -105,19 +106,27 @@ export const LandingPage: React.FC = () => {
     const trimmedName = name.trim();
 
     if (!rawCode) {
-      setLocalError('Please enter a 4-letter Room Code');
+      const err = 'Please enter a 4-letter Room Code';
+      setLocalError(err);
+      toast.error(err);
       return;
     }
     if (rawCode.length !== 4) {
-      setLocalError('Room code must be exactly 4 characters');
+      const err = 'Room code must be exactly 4 characters';
+      setLocalError(err);
+      toast.error(err);
       return;
     }
     if (!trimmedName) {
-      setLocalError('Please enter your nickname');
+      const err = 'Please enter your nickname';
+      setLocalError(err);
+      toast.error(err);
       return;
     }
     if (trimmedName.length > 12) {
-      setLocalError('Player name must be 12 characters or less');
+      const err = 'Player name must be 12 characters or less';
+      setLocalError(err);
+      toast.error(err);
       return;
     }
 
@@ -129,7 +138,9 @@ export const LandingPage: React.FC = () => {
     setLoading(false);
 
     if (!res.success) {
-      setLocalError(res.error || 'Failed to join room. Please check the code.');
+      const errMsg = res.error || 'Failed to join room. Please check the code.';
+      setLocalError(errMsg);
+      toast.error(errMsg, { id: 'join_error' });
     }
   };
 
@@ -141,7 +152,9 @@ export const LandingPage: React.FC = () => {
     setLoading(false);
 
     if (!res.success) {
-      setLocalError(res.error || 'Failed to create room. Please try again.');
+      const errMsg = res.error || 'Failed to create room. Please try again.';
+      setLocalError(errMsg);
+      toast.error(errMsg, { id: 'host_error' });
     }
   };
 

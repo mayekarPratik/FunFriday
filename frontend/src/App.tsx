@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { useCoreStore } from './store/coreStore';
 import { LandingPage } from './lobby/LandingPage';
 import { LobbyHost } from './lobby/LobbyHost';
@@ -100,6 +101,11 @@ export const App: React.FC = () => {
         localStorage.removeItem('player_id');
         localStorage.removeItem('myPlayerName');
       } catch {}
+
+      // Trigger modern toast notification sliding from the left
+      toast.error(data?.message || 'Host backed out or lost connection. The room has been closed.', {
+        id: 'host_disconnected_toast'
+      });
     };
 
     socket.on('game_selected', handleGameSelected);
@@ -171,6 +177,45 @@ export const App: React.FC = () => {
 
   return (
     <div className="h-[100dvh] w-full bg-black overflow-hidden text-[#F8FAFC] flex flex-col justify-between selection:bg-[#3B82F6]/30 relative z-0 box-border">
+      {/* Modern Slide-In Toast Notification System */}
+      <Toaster
+        position="bottom-left"
+        toastOptions={{
+          duration: 6000,
+          style: {
+            background: 'rgba(18, 20, 28, 0.95)',
+            color: '#F8FAFC',
+            border: '1px solid #1F2430',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+            borderRadius: '16px',
+            fontSize: '13px',
+            fontWeight: '500',
+            padding: '12px 18px',
+            maxWidth: '380px'
+          },
+          error: {
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#12141C'
+            },
+            style: {
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(23, 15, 20, 0.95)'
+            }
+          },
+          success: {
+            iconTheme: {
+              primary: '#22C55E',
+              secondary: '#12141C'
+            },
+            style: {
+              border: '1px solid rgba(34, 197, 94, 0.3)'
+            }
+          }
+        }}
+      />
+
       {/* Global Interactive Canvas Starfield */}
       <InteractiveBackground isLandingPage={!hasRoomCode} />
 
