@@ -84,12 +84,32 @@ export const App: React.FC = () => {
       useWerewolfStore.getState().resetGame();
     };
 
+    const handleHostDisconnected = (data: { room_code?: string; message?: string }) => {
+      console.warn('[App] Host disconnected event received:', data);
+      setCurrentGameId(null);
+      setPendingGameId(null);
+      setTvState('idle');
+      useMafiaStore.getState().resetGame();
+      useWerewolfStore.getState().resetGame();
+
+      // Clear any stored local keys
+      try {
+        localStorage.removeItem('roomCode');
+        localStorage.removeItem('playerId');
+        localStorage.removeItem('room_code');
+        localStorage.removeItem('player_id');
+        localStorage.removeItem('myPlayerName');
+      } catch {}
+    };
+
     socket.on('game_selected', handleGameSelected);
     socket.on('returned_to_lobby', handleReturnedToLobby);
+    socket.on('host_disconnected', handleHostDisconnected);
 
     return () => {
       socket.off('game_selected', handleGameSelected);
       socket.off('returned_to_lobby', handleReturnedToLobby);
+      socket.off('host_disconnected', handleHostDisconnected);
       if (offTimeoutRef.current) clearTimeout(offTimeoutRef.current);
       if (onTimeoutRef.current) clearTimeout(onTimeoutRef.current);
     };

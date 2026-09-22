@@ -165,6 +165,31 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
       }
     });
 
+    newSocket.on('host_disconnected', (data: { room_code?: string; message?: string }) => {
+      console.warn('[Socket] host_disconnected event received:', data);
+      
+      // 1. Clear any localStorage keys
+      try {
+        localStorage.removeItem('roomCode');
+        localStorage.removeItem('playerId');
+        localStorage.removeItem('room_code');
+        localStorage.removeItem('player_id');
+        localStorage.removeItem('myPlayerName');
+      } catch (e) {
+        console.warn('Could not clear localStorage:', e);
+      }
+
+      // 2. Reset Zustand coreStore to default state & set notification error
+      set({
+        roomCode: null,
+        players: [],
+        myPlayerName: null,
+        activeRoleMode: null,
+        currentGameId: null,
+        lastActionError: data?.message || 'Host backed out or lost connection. The room has been closed.'
+      });
+    });
+
     set({ socket: newSocket });
   },
 
@@ -180,6 +205,9 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
     return new Promise((resolve) => {
       socket.emit('create_room', (response: CreateRoomResponse) => {
         if (response && response.success && response.state) {
+          try {
+            localStorage.setItem('roomCode', response.state.room_code);
+          } catch {}
           set({
             roomCode: response.state.room_code,
             players: response.state.players || [],
@@ -209,6 +237,10 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
     return new Promise((resolve) => {
       socket.emit('join_room', payload, (response: JoinRoomResponse) => {
         if (response && response.success && response.state) {
+          try {
+            localStorage.setItem('roomCode', response.state.room_code);
+            localStorage.setItem('myPlayerName', payload.name.trim());
+          } catch {}
           set({
             roomCode: response.state.room_code,
             players: response.state.players || [],
@@ -250,6 +282,17 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
   },
 
   leaveRoom: () => {
+    const { socket, roomCode } = get();
+    if (socket && roomCode) {
+      socket.emit('leave_room', { room_code: roomCode });
+    }
+    try {
+      localStorage.removeItem('roomCode');
+      localStorage.removeItem('playerId');
+      localStorage.removeItem('room_code');
+      localStorage.removeItem('player_id');
+      localStorage.removeItem('myPlayerName');
+    } catch {}
     set({
       roomCode: null,
       players: [],
@@ -265,10 +308,20 @@ export const useCoreStore = create<CoreStore>((set, get) => ({
   },
 
   disconnectSocket: () => {
-    const { socket } = get();
+    const { socket, roomCode } = get();
+    if (socket && roomCode) {
+      socket.emit('leave_room', { room_code: roomCode });
+    }
     if (socket) {
       socket.removeAllListeners();
       socket.disconnect();
+      try {
+        localStorage.removeItem('roomCode');
+        localStorage.removeItem('playerId');
+        localStorage.removeItem('room_code');
+        localStorage.removeItem('player_id');
+        localStorage.removeItem('myPlayerName');
+      } catch {}
       set({
         socket: null,
         isConnected: false,

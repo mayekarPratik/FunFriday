@@ -13,6 +13,7 @@ import {
   createUniqueRoomCode,
   getGameState,
   saveGameState,
+  deleteGameState,
   ROOM_TTL_SECONDS
 } from '../services/redis';
 import {
@@ -34,6 +35,50 @@ function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+// Maps roomCode -> host_socket_id
+export const activeHostMap: Map<string, string> = new Map();
+
+// Maps roomCode -> NodeJS.Timeout for 5-second host reconnect grace period
+export const hostDisconnectTimers: Map<string, NodeJS.Timeout> = new Map();
+
+export function cancelHostDisconnectTimer(roomCode: string): void {
+  const normalized = roomCode.toUpperCase();
+  const existingTimer = hostDisconnectTimers.get(normalized);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    hostDisconnectTimers.delete(normalized);
+    console.log(`[Host Reconnected] Cleared grace timer for room ${normalized}`);
+  }
+}
+
+export async function teardownRoom(io: Server, roomCode: string): Promise<void> {
+  const normalized = roomCode.toUpperCase();
+  const socketRoom = getSocketRoomName(normalized);
+
+  console.log(`[Room Teardown] Emitting host_disconnected and closing room ${normalized}`);
+
+  // 1. Emit host_disconnected to all connected sockets in the room
+  io.to(socketRoom).emit('host_disconnected', {
+    room_code: normalized,
+    message: 'Host backed out or lost connection. The room has been closed.'
+  });
+
+  // 2. Completely delete room state from backend (Redis / memory)
+  await deleteGameState(normalized);
+  activeHostMap.delete(normalized);
+  hostDisconnectTimers.delete(normalized);
+
+  // 3. Forcefully make all sockets leave the socket room
+  try {
+    const socketsInRoom = await io.in(socketRoom).fetchSockets();
+    for (const s of socketsInRoom) {
+      s.leave(socketRoom);
+    }
+  } catch (err: any) {
+    console.warn(`[Room Teardown] Error removing sockets from room ${socketRoom}:`, err.message);
+  }
 }
 
 export function registerSocketHandlers(io: Server): void {
@@ -84,6 +129,10 @@ export function registerSocketHandlers(io: Server): void {
         };
 
         await saveGameState(initialState, ROOM_TTL_SECONDS);
+
+        const normalizedCode = roomCode.toUpperCase();
+        activeHostMap.set(normalizedCode, socket.id);
+        cancelHostDisconnectTimer(normalizedCode);
 
         const socketRoom = getSocketRoomName(roomCode);
         await socket.join(socketRoom);
@@ -783,8 +832,64 @@ export function registerSocketHandlers(io: Server): void {
       }
     });
 
-    socket.on('disconnect', () => {
+    // Handle explicit leave_room from host or player
+    socket.on('leave_room', async (payload?: { room_code?: string }, callback?: (response: any) => void) => {
+      try {
+        let roomCode = payload?.room_code?.toUpperCase();
+        if (!roomCode) {
+          for (const room of socket.rooms) {
+            if (room.startsWith('lobby:')) {
+              roomCode = room.replace('lobby:', '');
+              break;
+            }
+          }
+        }
+
+        if (roomCode) {
+          const state = await getGameState(roomCode);
+          if (state && state.host_socket_id === socket.id) {
+            console.log(`[Host Left] Host ${socket.id} explicitly left room ${roomCode}. Tearing down room immediately.`);
+            cancelHostDisconnectTimer(roomCode);
+            await teardownRoom(io, roomCode);
+            if (typeof callback === 'function') callback({ success: true, message: 'Room closed by host' });
+            return;
+          } else if (state) {
+            // Regular player left
+            state.players = state.players.filter((p) => p.socket_id !== socket.id);
+            await saveGameState(state, ROOM_TTL_SECONDS);
+            broadcastGameState(io, state);
+            socket.leave(getSocketRoomName(roomCode));
+            console.log(`[Player Left] Player ${socket.id} left room ${roomCode}`);
+          }
+        }
+        if (typeof callback === 'function') callback({ success: true });
+      } catch (error: any) {
+        console.error('[leave_room error]:', error.message);
+        if (typeof callback === 'function') callback({ success: false, error: error.message });
+      }
+    });
+
+    socket.on('disconnect', async () => {
       console.log(`[Socket] Client disconnected: ${socket.id}`);
+
+      // Check if this socket was the host of any active room
+      for (const [roomCode, hostSocketId] of activeHostMap.entries()) {
+        if (hostSocketId === socket.id) {
+          console.log(`[Host Disconnected] Host ${socket.id} disconnected from room ${roomCode}. Starting 5-second grace timer...`);
+          
+          // Clear any prior grace timer on this room
+          cancelHostDisconnectTimer(roomCode);
+
+          // Start 5-second grace period timer
+          const timer = setTimeout(async () => {
+            console.log(`[Host Grace Period Expired] Host failed to reconnect to room ${roomCode} within 5s. Teardown starting.`);
+            hostDisconnectTimers.delete(roomCode);
+            await teardownRoom(io, roomCode);
+          }, 5000);
+
+          hostDisconnectTimers.set(roomCode, timer);
+        }
+      }
     });
   });
 }
