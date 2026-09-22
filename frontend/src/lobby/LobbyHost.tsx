@@ -22,6 +22,8 @@ interface GameHubCard {
   id: string;
   name: string;
   tagline: string;
+  description: string;
+  features: string[];
   minPlayers: number;
   maxPlayers: number;
   category: string;
@@ -37,7 +39,9 @@ const AVAILABLE_GAMES: GameHubCard[] = [
   {
     id: 'werewolf',
     name: 'Werewolf',
-    tagline: 'Deception, secret roles, and night kills. Can the village root out the wolves?',
+    tagline: 'Deception, secret roles, and night kills.',
+    description: 'A treacherous village divided between innocent villagers, special power roles (Seer, Doctor), and hidden Werewolves hunting under the cover of darkness. Uncover lies during day trials before the pack claims total victory.',
+    features: ['Secret Night Actions', 'Seer & Doctor Roles', 'Live Village Accusations', 'Real-time Day Trials'],
     minPlayers: 4,
     maxPlayers: 16,
     category: 'Social Deduction',
@@ -51,7 +55,9 @@ const AVAILABLE_GAMES: GameHubCard[] = [
   {
     id: 'mafia',
     name: 'Mafia / Undercover',
-    tagline: 'The classic mobster deception game with undercover detectives and secret hits.',
+    tagline: 'Classic mobster deception & undercover hits.',
+    description: 'The mob controls the streets while undercover investigators and doctors work to dismantle the syndicate. Interrogate suspects, build alliances, and vote out the mobsters in high-stakes public trials.',
+    features: ['Syndicate Secret Hits', 'Detective Investigations', 'Doctor Protections', 'Heated Town Debates'],
     minPlayers: 3,
     maxPlayers: 20,
     category: 'Classic Party',
@@ -65,7 +71,9 @@ const AVAILABLE_GAMES: GameHubCard[] = [
   {
     id: 'secret_hitler',
     name: 'Secret Chancellor',
-    tagline: 'Pass liberal & fascist policies while uncovering the secret leader in power.',
+    tagline: 'Pass liberal & fascist policies while uncovering the secret leader.',
+    description: 'Political intrigue and deduction where players work to pass critical laws while testing the loyalty of presidential candidates.',
+    features: ['Secret Government', 'Policy Enactment', 'Veto Powers'],
     minPlayers: 5,
     maxPlayers: 10,
     category: 'Political Intrigue',
@@ -273,18 +281,18 @@ export const LobbyHost: React.FC = () => {
                 <div
                   key={game.id}
                   onClick={() => game.enabled && handleSelectGame(game.id)}
-                  className={`group relative rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between overflow-hidden border ${
+                  className={`group relative rounded-2xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between overflow-hidden border ${
                     game.enabled
-                      ? `${game.borderColor} bg-[#12141C] hover:bg-[#191C28] cursor-pointer shadow-lg hover:shadow-2xl hover:scale-[1.01]`
+                      ? `${game.borderColor} bg-[#12141C] hover:bg-[#151824] cursor-pointer shadow-lg hover:shadow-2xl`
                       : 'border-[#1F2430] bg-[#12141C]/50 opacity-60 cursor-not-allowed'
                   }`}
                 >
                   {/* Subtle hover gradient */}
-                  <div className={`absolute inset-0 transition-colors pointer-events-none ${game.glowColor}`} />
+                  <div className={`absolute inset-0 transition-opacity duration-300 pointer-events-none opacity-0 group-hover:opacity-100 ${game.glowColor}`} />
 
-                  <div>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-[#090A0F] border border-[#1F2430] flex items-center justify-center text-white">
+                  <div className="relative z-10 flex flex-col gap-2.5">
+                    <div className="flex items-start justify-between">
+                      <div className="w-12 h-12 rounded-xl bg-[#090A0F] border border-[#1F2430] flex items-center justify-center text-white shadow-inner group-hover:border-[#3B82F6]/40 transition">
                         <Icon className="w-6 h-6" />
                       </div>
 
@@ -301,23 +309,39 @@ export const LobbyHost: React.FC = () => {
                       )}
                     </div>
 
-                    <h3 className="text-xl font-bold text-white group-hover:text-[#3B82F6] transition">
-                      {game.name}
-                    </h3>
-                    <span className="text-xs font-mono text-[#94A3B8] block mb-2">
-                      {game.category} • {game.minPlayers}-{game.maxPlayers} Players
-                    </span>
-                    <p className="text-xs text-[#94A3B8] leading-relaxed">
-                      {game.tagline}
+                    <div>
+                      <h3 className="text-xl font-bold text-white group-hover:text-[#3B82F6] transition">
+                        {game.name}
+                      </h3>
+                      <span className="text-xs font-mono text-[#3B82F6]/90 font-medium block">
+                        {game.category} • {game.minPlayers}-{game.maxPlayers} Players
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-[#CBD5E1] leading-relaxed">
+                      {game.description}
                     </p>
+
+                    {game.features && game.features.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {game.features.map((feat) => (
+                          <span
+                            key={feat}
+                            className="px-2 py-0.5 rounded-md bg-[#090A0F]/80 border border-[#1F2430] text-[10px] font-medium text-[#94A3B8] group-hover:border-[#3B82F6]/30 group-hover:text-slate-200 transition"
+                          >
+                            {feat}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="pt-5 mt-4 border-t border-[#1F2430] flex items-center justify-between">
+                  <div className="relative z-10 pt-4 mt-3 border-t border-[#1F2430] flex items-center justify-between">
                     {game.enabled ? (
                       <button
                         type="button"
                         disabled={isLaunching}
-                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#2563EB] group-hover:from-[#2563EB] group-hover:to-[#1D4ED8] font-semibold text-xs text-white shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
+                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#2563EB] hover:to-[#1D4ED8] font-semibold text-xs text-white shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
                       >
                         <Play className="w-3.5 h-3.5 fill-white" />
                         <span>Launch {game.name}</span>
