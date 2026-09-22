@@ -61,7 +61,12 @@ export const PlayerView: React.FC = () => {
     return <PlayerDayVoting />;
   }
 
-  return <PlayerWaiting />;
+  if (gameState.phase === 'lobby' || !gameState.phase) {
+    return <PlayerWaiting />;
+  }
+
+  // If any other active phase is in progress, default to NightPhase
+  return <NightPhase />;
 };
 
 export default PlayerView;

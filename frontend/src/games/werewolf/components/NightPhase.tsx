@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useWerewolfStore } from '../werewolfStore';
-import { useCoreStore } from '../../../store/coreStore';
 import { ROLE_PRIORITIES } from '../../../types/game';
-import type { CoreStore } from '../../../store/coreStore';
 import {
   Moon,
   Eye,
@@ -19,7 +17,6 @@ import { WitchAction } from '../views/roles/WitchAction';
 
 export const NightPhase: React.FC = () => {
   const { gameState, getMyPlayer, submitNightAction, investigatePlayer, settings } = useWerewolfStore();
-  const socket = useCoreStore((s: CoreStore) => s.socket);
 
   const me = getMyPlayer();
   const myRole = me?.role || 'villager';
@@ -121,11 +118,10 @@ export const NightPhase: React.FC = () => {
   const alivePlayers = gameState.players.filter((p) => p.is_alive);
   const otherAlivePlayers = alivePlayers.filter((p) => p.socket_id !== me.socket_id);
 
-  // Auto-lock in whatever action is in progress when timer hits 0
-  const handleAutoLockIn = () => {
+  // Conceal screen when timer hits 0 without confirming action (allows player to re-check turn and pick)
+  const handleConcealScreen = () => {
     clearAllTimers();
     setIsRevealed(false);
-    setActionConfirmed(true);
     setTimeLeftMs(revealDurationMs);
   };
 
@@ -144,12 +140,12 @@ export const NightPhase: React.FC = () => {
       setTimeLeftMs(remaining);
 
       if (remaining <= 0) {
-        handleAutoLockIn();
+        handleConcealScreen();
       }
     }, 50);
 
     timeoutRef.current = setTimeout(() => {
-      handleAutoLockIn();
+      handleConcealScreen();
     }, revealDurationMs);
   };
 
@@ -178,7 +174,11 @@ export const NightPhase: React.FC = () => {
     }
 
     autoAdvanceTimeoutRef.current = setTimeout(() => {
-      handleAutoLockIn();
+      submitNightAction(targetSocketId);
+      clearAllTimers();
+      setIsRevealed(false);
+      setActionConfirmed(true);
+      setTimeLeftMs(revealDurationMs);
     }, 3000);
   };
 
@@ -197,12 +197,10 @@ export const NightPhase: React.FC = () => {
 
   const handleConfirmLovers = () => {
     if (selectedCupidTargets.length === 2) {
-      if (socket) {
-        socket.emit('cupid_link_lovers', {
-          room_code: gameState.room_code,
-          lovers: selectedCupidTargets
-        });
-      }
+      submitNightAction({
+        action_type: 'link',
+        target_socket_ids: selectedCupidTargets
+      });
       clearAllTimers();
       setIsRevealed(false);
       setActionConfirmed(true);
@@ -496,9 +494,9 @@ export const NightPhase: React.FC = () => {
         <button
           type="button"
           onClick={handleCheckTurn}
-          disabled={isRevealed}
+          disabled={isRevealed || actionConfirmed}
           className={`w-full h-15 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer select-none shadow-2xl ${
-            isRevealed
+            isRevealed || actionConfirmed
               ? 'bg-neutral-900 text-neutral-400 border border-neutral-800 opacity-60 cursor-not-allowed'
               : 'bg-neutral-950 text-neutral-200 border border-neutral-800 hover:border-neutral-700 hover:text-white active:scale-[0.99]'
           }`}
@@ -508,10 +506,15 @@ export const NightPhase: React.FC = () => {
               <Moon className="w-5 h-5 text-neutral-400 animate-pulse" />
               <span>Turn Visible ({secondsRemaining}s)</span>
             </>
+          ) : actionConfirmed ? (
+            <>
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <span>Action Submitted</span>
+            </>
           ) : (
             <>
               <Sparkles className="w-5 h-5 text-[#3B82F6]" />
-              <span>Check Turn</span>
+              <span>{isMyRoleTurn ? 'Check Turn / Choose' : 'Check Turn'}</span>
             </>
           )}
         </button>

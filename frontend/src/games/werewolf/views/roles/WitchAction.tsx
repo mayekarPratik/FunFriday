@@ -111,6 +111,13 @@ export const WitchAction: React.FC = () => {
     setTimeLeftMs(revealDurationMs);
   };
 
+  // Conceal screen when timer hits 0 without confirming action (allows Witch to re-check turn and pick)
+  const handleConcealScreen = () => {
+    clearAllTimers();
+    setIsRevealed(false);
+    setTimeLeftMs(revealDurationMs);
+  };
+
   const handleCheckTurn = () => {
     if (isRevealed || actionConfirmed) return;
 
@@ -126,22 +133,12 @@ export const WitchAction: React.FC = () => {
       setTimeLeftMs(remaining);
 
       if (remaining <= 0) {
-        if (!actionConfirmedRef.current) {
-          performSubmission(willHealRef.current, selectedPoisonIdRef.current);
-        } else {
-          clearAllTimers();
-          setIsRevealed(false);
-        }
+        handleConcealScreen();
       }
     }, 50);
 
     timeoutRef.current = setTimeout(() => {
-      if (!actionConfirmedRef.current) {
-        performSubmission(willHealRef.current, selectedPoisonIdRef.current);
-      } else {
-        clearAllTimers();
-        setIsRevealed(false);
-      }
+      handleConcealScreen();
     }, revealDurationMs);
   };
 
@@ -340,9 +337,9 @@ export const WitchAction: React.FC = () => {
         <button
           type="button"
           onClick={handleCheckTurn}
-          disabled={isRevealed}
+          disabled={isRevealed || actionConfirmed}
           className={`w-full h-15 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer select-none shadow-2xl ${
-            isRevealed
+            isRevealed || actionConfirmed
               ? 'bg-neutral-900 text-neutral-400 border border-neutral-800 opacity-60 cursor-not-allowed'
               : 'bg-neutral-950 text-neutral-200 border border-neutral-800 hover:border-neutral-700 hover:text-white active:scale-[0.99]'
           }`}
@@ -352,10 +349,15 @@ export const WitchAction: React.FC = () => {
               <FlaskConical className="w-5 h-5 text-purple-400 animate-pulse" />
               <span>Turn Visible ({secondsRemaining}s)</span>
             </>
+          ) : actionConfirmed ? (
+            <>
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <span>Potions Submitted</span>
+            </>
           ) : (
             <>
               <Sparkles className="w-5 h-5 text-purple-400" />
-              <span>Check Turn</span>
+              <span>Check Turn / Choose</span>
             </>
           )}
         </button>
