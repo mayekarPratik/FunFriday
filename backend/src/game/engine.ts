@@ -64,7 +64,7 @@ export function checkWinCondition(
     }
   }
 
-  const aliveWolves = alivePlayers.filter((p) => p.role === 'wolf').length;
+  const aliveWolves = alivePlayers.filter((p) => p.role === 'wolf' || p.role === 'werewolf').length;
   const aliveNonWolves = totalAlive - aliveWolves;
 
   // 3. Wolf Wins: If aliveWolves >= (totalAlive - aliveWolves)
@@ -95,7 +95,7 @@ export function initializeNightPhase(state: GameState): void {
   // Map over living players to get a list of active roles in the game
   const livingPlayerRoles = state.players
     .filter((p) => p.is_alive && p.role)
-    .map((p) => p.role as RoleType);
+    .map((p) => (p.role === 'werewolf' ? 'wolf' : p.role) as RoleType);
 
   // Deduplicate this list (so if there are multiple wolves, 'wolf' only appears once)
   const deduplicatedActiveRoles = Array.from(new Set(livingPlayerRoles));
@@ -547,7 +547,7 @@ export async function handleNightAction(
     if (validPoisonTarget) {
       state.night_actions.witch_poison = validPoisonTarget;
     }
-  } else if (role === 'wolf') {
+  } else if (role === 'wolf' || role === 'werewolf') {
     state.night_actions.wolf_votes = state.night_actions.wolf_votes || {};
     const wolfTarget = payload.target_socket_id || payload.target_socket_ids?.[0] || payload.wolf_kill;
 
@@ -563,7 +563,7 @@ export async function handleNightAction(
     state.night_actions['wolf'] = payload;
 
     // Check if all living wolves have submitted their action
-    const livingWolves = state.players.filter((p) => p.role === 'wolf' && p.is_alive);
+    const livingWolves = state.players.filter((p) => (p.role === 'wolf' || p.role === 'werewolf') && p.is_alive);
     const submittedCount = Object.keys(state.night_actions.wolf_votes).filter((voterId) =>
       livingWolves.some((w) => w.socket_id === voterId)
     ).length;

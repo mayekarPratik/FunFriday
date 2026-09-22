@@ -20,11 +20,7 @@ export const MASTER_NIGHT_ORDER: RoleType[] = [
   'doctor',
   'witch',
   'sheriff',
-  'seer',
-  'serial_killer',
-  'executioner',
-  'jester',
-  'villager'
+  'seer'
 ];
 
 export const ROLE_PRIORITIES: Record<string, number> = {
