@@ -31,8 +31,12 @@ export const NightPhase: React.FC = () => {
   const [timeLeftMs, setTimeLeftMs] = useState(revealDurationMs);
   const [actionConfirmed, setActionConfirmed] = useState(false);
 
-  // Seer investigation result state: { target_name: string; is_wolf: boolean }
-  const [seerResult, setSeerResult] = useState<{ target_name: string; is_wolf: boolean } | null>(null);
+  // Seer investigation result state: { target_name: string; is_wolf: boolean; target_socket_id: string }
+  const [seerResult, setSeerResult] = useState<{
+    target_name: string;
+    is_wolf: boolean;
+    target_socket_id: string;
+  } | null>(null);
   const [isInvestigating, setIsInvestigating] = useState(false);
 
   // Cupid multi-select state
@@ -166,20 +170,21 @@ export const NightPhase: React.FC = () => {
     const targetPlayer = gameState.players.find((p) => p.socket_id === targetSocketId);
     const targetName = targetPlayer?.name || 'Unknown';
 
-    if (result.success) {
+    if (result?.success) {
       setSeerResult({
         target_name: targetName,
-        is_wolf: Boolean(result.is_wolf)
+        is_wolf: Boolean(result.is_wolf),
+        target_socket_id: targetSocketId
       });
     }
+  };
 
-    autoAdvanceTimeoutRef.current = setTimeout(() => {
-      submitNightAction(targetSocketId);
-      clearAllTimers();
-      setIsRevealed(false);
-      setActionConfirmed(true);
-      setTimeLeftMs(revealDurationMs);
-    }, 3000);
+  const handleFinishSeerTurn = (targetSocketId: string) => {
+    submitNightAction(targetSocketId);
+    clearAllTimers();
+    setIsRevealed(false);
+    setActionConfirmed(true);
+    setTimeLeftMs(revealDurationMs);
   };
 
   // Cupid toggle target
@@ -331,29 +336,44 @@ export const NightPhase: React.FC = () => {
                       <div className="w-12 h-12 rounded-2xl bg-cyan-950/60 border border-cyan-800/80 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-950/50 mb-1">
                         <Eye className="w-6 h-6" />
                       </div>
-                      <h3 className="text-lg font-bold text-cyan-400">Peer into Player's Soul</h3>
+                      <h3 className="text-lg font-bold text-cyan-400">
+                        {seerResult ? "Soul Revealed" : "Peer into Player's Soul"}
+                      </h3>
                       <p className="text-xs text-neutral-400">
-                        Reveal whether they are aligned with Werewolves.
+                        {seerResult
+                          ? "Review identity below. Click 'Done' to advance the night."
+                          : 'Reveal whether they are aligned with Werewolves.'}
                       </p>
                     </div>
 
                     {seerResult ? (
-                      <div
-                        className={`p-6 rounded-2xl border flex flex-col items-center gap-3 animate-fadeIn ${
-                          seerResult.is_wolf
-                            ? 'bg-red-950/50 border-red-700/80 text-red-300'
-                            : 'bg-cyan-950/50 border-cyan-700/80 text-cyan-300'
-                        }`}
-                      >
-                        {seerResult.is_wolf ? (
-                          <Skull className="w-12 h-12 text-red-500 animate-bounce" />
-                        ) : (
-                          <Shield className="w-12 h-12 text-cyan-400 animate-pulse" />
-                        )}
-                        <h4 className="text-xl font-bold">{seerResult.target_name}</h4>
-                        <span className="text-sm font-mono uppercase tracking-wider font-bold">
-                          {seerResult.is_wolf ? '🐺 WEREWOLF DETECTED' : '🛡️ VILLAGER / NOT A WOLF'}
-                        </span>
+                      <div className="space-y-3 w-full animate-fadeIn">
+                        <div
+                          className={`p-6 rounded-2xl border flex flex-col items-center gap-3 ${
+                            seerResult.is_wolf
+                              ? 'bg-red-950/50 border-red-700/80 text-red-300 shadow-lg shadow-red-950/40'
+                              : 'bg-cyan-950/50 border-cyan-700/80 text-cyan-300 shadow-lg shadow-cyan-950/40'
+                          }`}
+                        >
+                          {seerResult.is_wolf ? (
+                            <Skull className="w-12 h-12 text-red-500 animate-bounce" />
+                          ) : (
+                            <Shield className="w-12 h-12 text-cyan-400 animate-pulse" />
+                          )}
+                          <h4 className="text-xl font-bold">{seerResult.target_name}</h4>
+                          <span className="text-sm font-mono uppercase tracking-wider font-bold">
+                            {seerResult.is_wolf ? '🐺 WEREWOLF DETECTED' : '🛡️ VILLAGER / NOT A WOLF'}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleFinishSeerTurn(seerResult.target_socket_id)}
+                          className="w-full h-12 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm tracking-wide uppercase transition shadow-lg shadow-cyan-600/25 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span>Done</span>
+                        </button>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-2.5">
@@ -479,6 +499,10 @@ export const NightPhase: React.FC = () => {
                 <p className="text-xs font-mono text-emerald-400 flex items-center justify-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Night Action Stowed
                 </p>
+              ) : myRole === 'seer' && seerResult ? (
+                <p className="text-xs text-cyan-400 max-w-xs">
+                  Identity revealed. Tap 'Check Selected Option / Done' below to review and advance.
+                </p>
               ) : (
                 <p className="text-xs text-neutral-600 max-w-xs">
                   Tap 'Check Turn' below. The screen will reveal for action duration before returning to black.
@@ -510,6 +534,11 @@ export const NightPhase: React.FC = () => {
             <>
               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
               <span>Action Submitted</span>
+            </>
+          ) : myRole === 'seer' && seerResult ? (
+            <>
+              <Eye className="w-5 h-5 text-cyan-400" />
+              <span>Check Selected Option / Done</span>
             </>
           ) : (
             <>

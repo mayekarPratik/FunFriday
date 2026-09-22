@@ -32,8 +32,12 @@ export const NightPhase: React.FC = () => {
   const [timeLeftMs, setTimeLeftMs] = useState(revealDurationMs);
   const [actionConfirmed, setActionConfirmed] = useState(false);
 
-  // Seer investigation result state: { target_name: string; is_wolf: boolean }
-  const [seerResult, setSeerResult] = useState<{ target_name: string; is_wolf: boolean } | null>(null);
+  // Seer investigation result state: { target_name: string; is_wolf: boolean; target_socket_id: string }
+  const [seerResult, setSeerResult] = useState<{
+    target_name: string;
+    is_wolf: boolean;
+    target_socket_id: string;
+  } | null>(null);
   const [isInvestigating, setIsInvestigating] = useState(false);
 
   // Cupid multi-select state
@@ -99,15 +103,12 @@ export const NightPhase: React.FC = () => {
         data.target_name ||
         gameState?.players.find((p) => p.socket_id === data.target_socket_id)?.name ||
         'Target';
-      setSeerResult({ target_name: targetName, is_wolf: data.is_wolf });
+      setSeerResult({
+        target_name: targetName,
+        is_wolf: data.is_wolf,
+        target_socket_id: data.target_socket_id
+      });
       setIsInvestigating(false);
-
-      // Auto advance queue after 3 seconds of viewing inspection
-      autoAdvanceTimeoutRef.current = setTimeout(() => {
-        submitNightAction({ action_type: 'inspect', target_socket_id: data.target_socket_id });
-        setIsRevealed(false);
-        setActionConfirmed(true);
-      }, 3000);
     };
 
     socket.on('seer_result', handleSeerResult);
@@ -167,22 +168,16 @@ export const NightPhase: React.FC = () => {
         const targetPlayer = gameState?.players.find((p) => p.socket_id === targetSocketId);
         setSeerResult({
           target_name: targetPlayer ? targetPlayer.name : 'Target',
-          is_wolf: Boolean(res.is_wolf)
+          is_wolf: Boolean(res.is_wolf),
+          target_socket_id: targetSocketId
         });
         setIsInvestigating(false);
-
-        // Wait 3 seconds showing the inspection card before advancing queue
-        autoAdvanceTimeoutRef.current = setTimeout(() => {
-          submitNightAction(targetSocketId);
-          setIsRevealed(false);
-          setActionConfirmed(true);
-          setTimeLeftMs(revealDurationMs);
-        }, 3000);
       } else {
         // Fallback submit
         submitNightAction(targetSocketId);
         setIsRevealed(false);
         setActionConfirmed(true);
+        setIsInvestigating(false);
       }
       return;
     }
@@ -190,6 +185,14 @@ export const NightPhase: React.FC = () => {
     // Single target action (Wolf, Doctor, etc.)
     clearAllTimers();
     submitNightAction(targetSocketId);
+    setIsRevealed(false);
+    setActionConfirmed(true);
+    setTimeLeftMs(revealDurationMs);
+  };
+
+  const handleFinishSeerTurn = (targetSocketId: string) => {
+    submitNightAction(targetSocketId);
+    clearAllTimers();
     setIsRevealed(false);
     setActionConfirmed(true);
     setTimeLeftMs(revealDurationMs);
@@ -342,27 +345,35 @@ export const NightPhase: React.FC = () => {
 
                 {/* Seer Inspection Result Card */}
                 {myRole === 'seer' && seerResult && (
-                  <div
-                    className={`w-full p-4 rounded-xl border animate-fadeIn flex flex-col items-center gap-2 ${
-                      seerResult.is_wolf
-                        ? 'bg-red-950/40 border-red-800/80 text-red-400'
-                        : 'bg-emerald-950/40 border-emerald-800/80 text-emerald-400'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 font-bold text-sm">
-                      {seerResult.is_wolf ? (
-                        <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-                      ) : (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                      )}
-                      <span>
-                        {seerResult.target_name} is{' '}
-                        {seerResult.is_wolf ? 'a Werewolf! 🐺' : 'NOT a Werewolf (Innocent) 🛡️'}
-                      </span>
+                  <div className="w-full space-y-3 animate-fadeIn">
+                    <div
+                      className={`w-full p-4 rounded-xl border flex flex-col items-center gap-2 ${
+                        seerResult.is_wolf
+                          ? 'bg-red-950/40 border-red-800/80 text-red-400'
+                          : 'bg-emerald-950/40 border-emerald-800/80 text-emerald-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        {seerResult.is_wolf ? (
+                          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                        ) : (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                        )}
+                        <span>
+                          {seerResult.target_name} is{' '}
+                          {seerResult.is_wolf ? 'a Werewolf! 🐺' : 'NOT a Werewolf (Innocent) 🛡️'}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[11px] font-mono opacity-70">
-                      Advancing night queue in 3s...
-                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleFinishSeerTurn(seerResult.target_socket_id)}
+                      className="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-bold text-xs uppercase tracking-wider text-white transition cursor-pointer shadow-lg shadow-cyan-600/30 flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Done</span>
+                    </button>
                   </div>
                 )}
 
@@ -534,6 +545,10 @@ export const NightPhase: React.FC = () => {
                 <p className="text-xs font-mono text-emerald-400 flex items-center justify-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Action Confirmed
                 </p>
+              ) : myRole === 'seer' && seerResult ? (
+                <p className="text-xs text-cyan-400 max-w-xs">
+                  Identity revealed. Tap 'Check Selected Option / Done' below to review and advance.
+                </p>
               ) : (
                 <p className="text-xs text-neutral-600 max-w-xs">
                   Tap 'Check Turn' below. The menu will reveal for 4 seconds before returning to black.
@@ -549,9 +564,9 @@ export const NightPhase: React.FC = () => {
         <button
           type="button"
           onClick={handleCheckTurn}
-          disabled={isRevealed}
+          disabled={isRevealed || actionConfirmed}
           className={`w-full h-15 rounded-2xl font-bold text-sm tracking-wide uppercase transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer select-none shadow-2xl ${
-            isRevealed
+            isRevealed || actionConfirmed
               ? 'bg-neutral-900 text-neutral-400 border border-neutral-800 opacity-60 cursor-not-allowed'
               : 'bg-neutral-950 text-neutral-200 border border-neutral-800 hover:border-neutral-700 hover:text-white active:scale-[0.99]'
           }`}
@@ -560,6 +575,16 @@ export const NightPhase: React.FC = () => {
             <>
               <Eye className="w-5 h-5 text-blue-400 animate-pulse" />
               <span>Turn Visible ({secondsRemaining}s)</span>
+            </>
+          ) : actionConfirmed ? (
+            <>
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <span>Action Submitted</span>
+            </>
+          ) : myRole === 'seer' && seerResult ? (
+            <>
+              <Eye className="w-5 h-5 text-cyan-400" />
+              <span>Check Selected Option / Done</span>
             </>
           ) : (
             <>
