@@ -13,7 +13,9 @@ import {
   Flame,
   Shield,
   Skull,
-  QrCode as QrCodeIcon
+  QrCode as QrCodeIcon,
+  Maximize2,
+  X
 } from 'lucide-react';
 
 interface GameHubCard {
@@ -86,6 +88,7 @@ export const LobbyHost: React.FC = () => {
 
   const [copied, setCopied] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const joinUrl = typeof window !== 'undefined' && roomCode
     ? `${window.location.origin}/?code=${roomCode}`
@@ -108,7 +111,65 @@ export const LobbyHost: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col justify-between gap-4 sm:gap-6 overflow-hidden box-border">
+    <div className="w-full h-full flex flex-col justify-between gap-4 sm:gap-6 overflow-hidden box-border relative">
+      {/* Expanded Big QR Code Modal */}
+      {isQrModalOpen && joinUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setIsQrModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm sm:max-w-md p-6 sm:p-8 rounded-3xl bg-[#12141C] border border-[#1F2430] shadow-2xl flex flex-col items-center text-center gap-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setIsQrModalOpen(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-[#090A0F] border border-[#1F2430] hover:border-[#EF4444] text-[#94A3B8] hover:text-[#EF4444] flex items-center justify-center transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-1 mt-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-mono uppercase font-bold tracking-wider">
+                <QrCodeIcon className="w-3.5 h-3.5" /> Scan on Mobile
+              </div>
+              <h2 className="text-2xl font-bold text-white">Join The Lobby</h2>
+              <p className="text-xs text-[#94A3B8]">Point your phone camera at the QR code below to connect instantly.</p>
+            </div>
+
+            {/* High Resolution Big QR Code */}
+            <div className="p-4 bg-white rounded-2xl shadow-2xl shadow-blue-500/10 border-4 border-white">
+              <QRCode
+                value={joinUrl}
+                size={220}
+                level="H"
+                style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+              />
+            </div>
+
+            {/* Room Code Quick Info Pill */}
+            <div className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#090A0F] border border-[#1F2430]">
+              <div className="text-left">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-[#94A3B8] block -mb-0.5">
+                  ROOM CODE
+                </span>
+                <span className="font-mono font-black text-2xl tracking-[0.25em] text-[#3B82F6]">
+                  {roomCode}
+                </span>
+              </div>
+              <button
+                onClick={handleCopyCode}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#191C28] hover:bg-[#1F2430] border border-[#1F2430] text-xs font-mono text-white transition cursor-pointer"
+              >
+                {copied ? <Check className="w-4 h-4 text-[#22C55E]" /> : <Copy className="w-4 h-4 text-[#94A3B8]" />}
+                <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Host Header Banner */}
       <div className="w-full shrink-0 flex flex-col md:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-[#12141C] border border-[#1F2430] shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-3.5">
@@ -136,23 +197,30 @@ export const LobbyHost: React.FC = () => {
 
         {/* QR Code & Room Code Section */}
         <div className="flex items-center gap-3 bg-[#090A0F]/90 border border-[#1F2430] p-2.5 sm:px-4 sm:py-2.5 rounded-2xl shadow-inner">
-          {/* Jackbox-style Scan QR Code */}
+          {/* Jackbox-style Scan QR Code with Hover Expand + Click to Enlarge */}
           {joinUrl && (
-            <div className="flex items-center gap-2.5 pr-3 border-r border-[#1F2430]">
-              <div className="p-1 bg-white rounded-lg shadow shrink-0">
+            <div
+              onClick={() => setIsQrModalOpen(true)}
+              className="group/qr relative flex items-center gap-2.5 pr-3 border-r border-[#1F2430] cursor-pointer hover:bg-[#12141C] p-1.5 rounded-xl transition-all"
+              title="Click to enlarge QR Code"
+            >
+              <div className="relative p-1 bg-white rounded-lg shadow shrink-0 transition-transform duration-200 group-hover/qr:scale-110 group-hover/qr:shadow-lg group-hover/qr:shadow-blue-500/20">
                 <QRCode
                   value={joinUrl}
                   size={48}
                   level="M"
                   style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
                 />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/qr:opacity-100 rounded-lg flex items-center justify-center transition-opacity">
+                  <Maximize2 className="w-4 h-4 text-white drop-shadow-md" />
+                </div>
               </div>
               <div className="hidden sm:flex flex-col text-left">
-                <span className="text-[9px] font-mono uppercase tracking-widest text-[#3B82F6] font-bold flex items-center gap-1">
+                <span className="text-[9px] font-mono uppercase tracking-widest text-[#3B82F6] font-bold flex items-center gap-1 group-hover/qr:text-blue-400">
                   <QrCodeIcon className="w-3 h-3" /> SCAN TO JOIN
                 </span>
-                <span className="text-[9px] text-[#94A3B8] max-w-[85px] leading-tight">
-                  Point phone camera
+                <span className="text-[9px] text-[#94A3B8] max-w-[85px] leading-tight group-hover/qr:text-white transition-colors">
+                  Click to enlarge
                 </span>
               </div>
             </div>
