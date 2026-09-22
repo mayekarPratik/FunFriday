@@ -108,17 +108,16 @@ export const LobbyHost: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 w-full h-full min-h-0 overflow-y-auto box-border py-4 px-2 sm:px-4">
-      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6 sm:gap-8">
-        {/* Top Host Header Banner */}
-      <div className="w-full flex flex-col md:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-[#12141C] border border-[#1F2430] shadow-xl backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-[#191C28] border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shadow-lg shrink-0">
-            <Tv className="w-7 h-7" />
+    <div className="w-full h-full flex flex-col justify-between gap-4 sm:gap-6 overflow-hidden box-border">
+      {/* Top Host Header Banner */}
+      <div className="w-full shrink-0 flex flex-col md:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-[#12141C] border border-[#1F2430] shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-[#191C28] border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shadow-lg shrink-0">
+            <Tv className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-[10px] font-mono uppercase font-bold tracking-wider">
+              <span className="px-2 py-0.5 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/30 text-[#3B82F6] text-[10px] font-mono uppercase font-bold tracking-wider">
                 TV Host Dashboard
               </span>
               <span className="flex items-center gap-1 text-xs text-[#22C55E] font-medium">
@@ -126,7 +125,7 @@ export const LobbyHost: React.FC = () => {
                 Lobby Active
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-white mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-white mt-0.5">
               Welcome to The Lobby
             </h1>
             <p className="text-xs text-[#94A3B8] mt-0.5">
@@ -136,48 +135,48 @@ export const LobbyHost: React.FC = () => {
         </div>
 
         {/* QR Code & Room Code Section */}
-        <div className="flex items-center gap-4 bg-[#090A0F]/90 border border-[#1F2430] p-3.5 sm:px-5 sm:py-3 rounded-2xl shadow-inner">
+        <div className="flex items-center gap-3 bg-[#090A0F]/90 border border-[#1F2430] p-2.5 sm:px-4 sm:py-2.5 rounded-2xl shadow-inner">
           {/* Jackbox-style Scan QR Code */}
           {joinUrl && (
-            <div className="flex items-center gap-3 pr-3 sm:pr-4 border-r border-[#1F2430]">
-              <div className="p-1.5 bg-white rounded-xl shadow-lg shrink-0">
+            <div className="flex items-center gap-2.5 pr-3 border-r border-[#1F2430]">
+              <div className="p-1 bg-white rounded-lg shadow shrink-0">
                 <QRCode
                   value={joinUrl}
-                  size={64}
+                  size={48}
                   level="M"
                   style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
                 />
               </div>
               <div className="hidden sm:flex flex-col text-left">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6] font-bold flex items-center gap-1">
+                <span className="text-[9px] font-mono uppercase tracking-widest text-[#3B82F6] font-bold flex items-center gap-1">
                   <QrCodeIcon className="w-3 h-3" /> SCAN TO JOIN
                 </span>
-                <span className="text-[10px] text-[#94A3B8] max-w-[90px] leading-tight mt-0.5">
-                  Point phone camera at screen
+                <span className="text-[9px] text-[#94A3B8] max-w-[85px] leading-tight">
+                  Point phone camera
                 </span>
               </div>
             </div>
           )}
 
           {/* Room Code & Copy */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleCopyCode}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#12141C] border border-[#1F2430] hover:border-[#3B82F6]/50 transition text-white font-mono cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#12141C] border border-[#1F2430] hover:border-[#3B82F6]/50 transition text-white font-mono cursor-pointer"
               title="Click to copy Room Code"
             >
               <div className="text-left">
-                <span className="text-[9px] uppercase font-mono tracking-widest text-[#94A3B8] block -mb-0.5">
+                <span className="text-[8px] uppercase font-mono tracking-widest text-[#94A3B8] block -mb-0.5">
                   ROOM
                 </span>
-                <span className="font-bold text-xl tracking-[0.2em] text-[#3B82F6]">{roomCode}</span>
+                <span className="font-bold text-lg tracking-[0.15em] text-[#3B82F6]">{roomCode}</span>
               </div>
-              {copied ? <Check className="w-4 h-4 text-[#22C55E] ml-1" /> : <Copy className="w-4 h-4 text-[#94A3B8] ml-1" />}
+              {copied ? <Check className="w-4 h-4 text-[#22C55E] ml-1" /> : <Copy className="w-3.5 h-3.5 text-[#94A3B8] ml-1" />}
             </button>
 
             <button
               onClick={leaveRoom}
-              className="p-3 rounded-xl bg-[#12141C] border border-[#1F2430] hover:border-[#EF4444]/50 text-[#94A3B8] hover:text-[#EF4444] transition cursor-pointer"
+              className="p-2.5 rounded-xl bg-[#12141C] border border-[#1F2430] hover:border-[#EF4444]/50 text-[#94A3B8] hover:text-[#EF4444] transition cursor-pointer"
               title="Leave Lobby"
             >
               <LogOut className="w-4 h-4" />
@@ -187,10 +186,10 @@ export const LobbyHost: React.FC = () => {
       </div>
 
       {/* Main Grid: Game Selection & Player Roster */}
-      <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="w-full flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Game Catalog Selection (2 Cols) */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+        <div className="lg:col-span-2 flex flex-col justify-between gap-3 min-h-0">
+          <div className="flex items-center justify-between shrink-0">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[#3B82F6]" /> Choose a Game Mode
             </h2>
@@ -199,8 +198,8 @@ export const LobbyHost: React.FC = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {AVAILABLE_GAMES.map((game) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 min-h-0">
+            {AVAILABLE_GAMES.filter(g => g.enabled).map((game) => {
               const Icon = game.icon;
               return (
                 <div
@@ -245,7 +244,7 @@ export const LobbyHost: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="pt-6 mt-4 border-t border-[#1F2430] flex items-center justify-between">
+                  <div className="pt-5 mt-4 border-t border-[#1F2430] flex items-center justify-between">
                     {game.enabled ? (
                       <button
                         type="button"
@@ -256,7 +255,7 @@ export const LobbyHost: React.FC = () => {
                         <span>Launch {game.name}</span>
                       </button>
                     ) : (
-                      <div className="w-full py-2.5 px-4 rounded-xl bg-[#090A0F] border border-[#1F2430] text-center text-xs text-[#64748B] flex items-center justify-center gap-1.5 font-mono">
+                      <div className="w-full py-2 px-4 rounded-xl bg-[#090A0F] border border-[#1F2430] text-center text-xs text-[#64748B] flex items-center justify-center gap-1.5 font-mono">
                         <Lock className="w-3.5 h-3.5" /> Coming Soon
                       </div>
                     )}
@@ -268,17 +267,17 @@ export const LobbyHost: React.FC = () => {
         </div>
 
         {/* Joined Players Panel (1 Col) */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+        <div className="flex flex-col justify-between gap-3 min-h-0">
+          <div className="flex items-center justify-between shrink-0">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Users className="w-5 h-5 text-[#22C55E]" /> Joined Players
             </h2>
-            <span className="px-2 py-0.5 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] text-xs font-mono font-semibold">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] text-xs font-mono font-semibold">
               {players.length} online
             </span>
           </div>
 
-          <div className="rounded-2xl p-5 bg-[#12141C] border border-[#1F2430] flex flex-col gap-3 min-h-[320px] shadow-xl">
+          <div className="rounded-2xl p-5 bg-[#12141C] border border-[#1F2430] flex flex-col gap-3 flex-1 min-h-0 shadow-xl overflow-hidden">
             {players.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-[#64748B]">
                 <Users className="w-10 h-10 mb-2 stroke-1 opacity-50" />
@@ -288,7 +287,7 @@ export const LobbyHost: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1.5 custom-scrollbar">
                 {players.map((player, index) => (
                   <div
                     key={player.socket_id}
@@ -314,7 +313,6 @@ export const LobbyHost: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };
